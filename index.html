@@ -1,0 +1,1831 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🌊 釜山旅遊</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=DM+Sans:wght@300;400;500&family=Noto+Serif+TC:wght@300&display=swap" rel="stylesheet">
+<!-- Firebase SDK (compat 版本，可直接用 <script> 標籤引入，免打包工具) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<style>
+:root {
+  --ocean:#5b9ec9; --ocean2:#3a7fa8; --ocean3:#1e5f82;
+  --mid:#7a9bb5; --soft:#a8c4d8; --light:#9ab5c8;
+  --dark:#2d3e50; --red:#cc6b6b; --green:#5aad8c;
+  --gb:rgba(255,255,255,0.88); --gbr:rgba(91,158,201,0.13);
+  --gs:0 3px 16px rgba(58,127,168,0.06),0 1px 4px rgba(58,127,168,0.04);
+  --nav-h:72px; --r:18px; --r-sm:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{
+  font-family:'DM Sans','Noto Sans TC',sans-serif;
+  background:#f6fafd;
+  min-height:100vh;color:var(--dark);max-width:430px;margin:0 auto;
+  overflow-x:hidden;position:relative;
+}
+body::before{
+  content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse at 80% 0%,rgba(255,255,255,0.95) 0%,transparent 50%),radial-gradient(ellipse at 15% 100%,rgba(91,158,201,0.05) 0%,transparent 50%);
+  pointer-events:none;z-index:0;
+}
+
+/* GLASS BUTTON */
+.gb{
+  background:rgba(255,255,255,0.65);border:1px solid rgba(45,142,197,0.28);
+  backdrop-filter:blur(14px) saturate(1.5);-webkit-backdrop-filter:blur(14px) saturate(1.5);
+  border-radius:50px;padding:10px 20px;font-family:inherit;font-size:13px;font-weight:500;
+  color:var(--ocean2);cursor:pointer;
+  transition:all .22s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 4px 16px rgba(13,79,122,0.07),inset 0 1.5px 0 rgba(255,255,255,0.9);
+  display:inline-flex;align-items:center;gap:6px;position:relative;overflow:hidden;
+}
+.gb::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.38) 0%,transparent 60%);border-radius:inherit;pointer-events:none;}
+.gb:active{transform:scale(0.96);}
+.gb:hover{background:rgba(255,255,255,0.84);box-shadow:0 6px 24px rgba(13,79,122,0.12),inset 0 1.5px 0 #fff;}
+.gb.pri{background:linear-gradient(135deg,rgba(91,158,201,0.9),rgba(58,127,168,0.95));border-color:rgba(91,158,201,0.4);color:#fff;box-shadow:0 3px 14px rgba(58,127,168,0.18),inset 0 1px 0 rgba(255,255,255,0.28);}
+.gb.pri:hover{background:linear-gradient(135deg,rgba(91,158,201,1),rgba(58,127,168,1));}
+.gb.danger{background:rgba(224,82,82,0.1);border-color:rgba(224,82,82,0.3);color:var(--red);}
+.gb.success{background:rgba(60,170,124,0.12);border-color:rgba(60,170,124,0.3);color:var(--green);}
+.gb.sm{padding:6px 13px;font-size:11px;}
+.gb.xs{padding:4px 9px;font-size:10px;}
+
+/* HEADER */
+.header{
+  position:sticky;top:0;z-index:100;
+  background:rgba(248,252,255,0.94);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);
+  border-bottom:1px solid rgba(91,158,201,0.1);padding:14px 20px 11px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.hlogo{display:flex;align-items:center;gap:9px;}
+.hlogo .flag{font-size:20px;}
+.logo-t{font-size:16px;font-weight:500;color:var(--dark);}
+.logo-s{font-size:10px;color:var(--light);margin-top:1px;}
+
+/* BOTTOM NAV */
+.bnav{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:430px;height:var(--nav-h);
+  background:rgba(248,252,255,0.96);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);
+  border-top:1px solid rgba(91,158,201,0.1);
+  display:flex;align-items:center;justify-content:space-around;z-index:200;padding:0 2px 10px;
+}
+.ni{display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 4px;cursor:pointer;border-radius:10px;transition:all .2s;min-width:40px;}
+.ni:active{transform:scale(0.93);}
+.ni-icon{font-size:17px;}
+.ni-lbl{font-size:8.5px;font-weight:500;color:var(--soft);transition:color .2s;white-space:nowrap;}
+.ni.active{background:rgba(45,142,197,0.1);}
+.ni.active .ni-lbl{color:var(--ocean2);font-weight:700;}
+.ndot{width:3px;height:3px;border-radius:50%;background:var(--ocean);opacity:0;margin-top:-1px;transition:opacity .2s;}
+.ni.active .ndot{opacity:1;}
+
+/* CONTENT */
+.content{padding:16px 14px;padding-bottom:calc(var(--nav-h) + 20px);position:relative;z-index:1;}
+.page{display:none;}.page.active{display:block;}
+
+/* CARD */
+.card{background:var(--gb);border:1px solid var(--gbr);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:var(--gs);}
+.sec-title{font-size:10px;font-weight:600;color:var(--soft);letter-spacing:1.8px;text-transform:uppercase;margin:18px 0 10px;}
+
+/* FEATURE GRID */
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+.fcrd{
+  background:var(--gb);border:1px solid var(--gbr);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-radius:var(--r);padding:18px 14px;cursor:pointer;transition:all .22s;box-shadow:var(--gs);
+  display:flex;flex-direction:column;gap:8px;min-height:96px;position:relative;overflow:hidden;
+}
+.fcrd::before{content:'';position:absolute;top:-20px;right:-20px;width:70px;height:70px;border-radius:50%;background:radial-gradient(circle,rgba(45,142,197,0.1),transparent 70%);}
+.fcrd:active{transform:scale(0.96);}
+.fci{font-size:24px;}.fcn{font-size:13px;font-weight:600;color:var(--dark);}.fcs{font-size:10px;color:var(--light);}
+
+/* HERO */
+.hero{
+  background:linear-gradient(135deg,rgba(91,158,201,0.72) 0%,rgba(58,127,168,0.82) 100%);
+  border-radius:var(--r);padding:20px;margin-bottom:14px;color:#fff;
+  position:relative;overflow:hidden;box-shadow:0 6px 24px rgba(58,127,168,0.14);
+}
+.hero::before{content:'🌊';position:absolute;right:14px;bottom:-4px;font-size:68px;opacity:0.14;line-height:1;}
+.hero-d{font-size:11px;opacity:.8;margin-bottom:4px;letter-spacing:.5px;}
+.hero-t{font-size:22px;font-weight:300;font-family:'Noto Serif TC',serif;}
+.hero-s{font-size:12px;opacity:.75;margin-top:4px;}
+
+/* DAY HEADER */
+.dh{display:flex;align-items:center;gap:10px;margin:16px 0 8px;}
+.dbadge{background:linear-gradient(135deg,var(--ocean),var(--ocean2));color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:.5px;box-shadow:0 2px 8px rgba(58,127,168,0.15);}
+.ddate{font-size:12px;color:var(--light);}
+
+/* TRIP ITEM */
+.titem{
+  background:var(--gb);border:1px solid var(--gbr);border-radius:var(--r);
+  padding:13px 14px;margin-bottom:8px;box-shadow:var(--gs);transition:all .18s;cursor:pointer;
+}
+.titem:active{transform:scale(0.99);}
+.titem.linked{border-left:3px solid var(--ocean);}
+.titem-top{display:flex;align-items:flex-start;gap:8px;}
+.ttime{font-size:11px;color:var(--ocean);font-weight:700;min-width:38px;padding-top:1px;}
+.tname{font-size:14px;font-weight:600;color:var(--dark);flex:1;line-height:1.3;}
+.ttag{font-size:10px;color:var(--mid);padding:2px 8px;background:rgba(45,142,197,0.1);border-radius:10px;border:1px solid rgba(45,142,197,0.16);white-space:nowrap;flex-shrink:0;}
+.tacts{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+
+.mapbtn{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:6px 12px;border-radius:20px;cursor:pointer;text-decoration:none;transition:all .2s;background:rgba(91,158,201,0.1);border:1px solid rgba(91,158,201,0.22);color:var(--ocean2);box-shadow:0 1px 6px rgba(58,127,168,0.06),inset 0 1px 0 rgba(255,255,255,0.8);}
+.mapbtn:active{transform:scale(0.96);}
+.uberbtn{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:6px 12px;border-radius:20px;cursor:pointer;text-decoration:none;transition:all .2s;background:rgba(26,58,82,0.08);border:1px solid rgba(26,58,82,0.14);color:var(--dark);box-shadow:0 2px 8px rgba(13,79,122,0.05),inset 0 1px 0 rgba(255,255,255,0.7);}
+.linkbtn{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:6px 12px;border-radius:20px;cursor:pointer;transition:all .2s;background:rgba(90,173,140,0.08);border:1px solid rgba(90,173,140,0.22);color:var(--green);box-shadow:0 1px 6px rgba(90,173,140,0.06),inset 0 1px 0 rgba(255,255,255,0.8);}
+.linkbtn:active{transform:scale(0.96);}
+
+.tdetail{display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(45,142,197,0.1);}
+.tdetail.open{display:block;}
+.dlbl{font-size:10px;font-weight:700;color:var(--soft);letter-spacing:.8px;text-transform:uppercase;margin-bottom:3px;}
+.dval{font-size:12px;color:var(--dark);line-height:1.6;margin-bottom:8px;}
+.lexp-item{display:flex;align-items:center;justify-content:space-between;font-size:11px;padding:6px 10px;background:rgba(45,142,197,0.06);border-radius:8px;margin-bottom:4px;border:1px solid rgba(45,142,197,0.1);}
+
+/* EXPENSE */
+.exp-hero{
+  background:linear-gradient(135deg,rgba(58,127,168,0.78) 0%,rgba(91,158,201,0.7) 100%);
+  border-radius:var(--r);padding:20px;margin-bottom:14px;color:#fff;
+  position:relative;overflow:hidden;box-shadow:0 6px 24px rgba(58,127,168,0.14);
+}
+.exp-hero::after{content:'💳';position:absolute;right:16px;bottom:8px;font-size:54px;opacity:.12;}
+.exp-tlbl{font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;opacity:.85;margin-bottom:5px;}
+.exp-tkrw{font-size:32px;font-weight:300;font-family:'Noto Serif TC',serif;}
+.exp-ttwd{font-size:13px;opacity:.8;margin-top:4px;}
+.exp-prow{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+.exp-pchip{font-size:10px;padding:4px 10px;background:rgba(255,255,255,0.2);border-radius:20px;border:1px solid rgba(255,255,255,0.28);backdrop-filter:blur(4px);}
+
+.eitem{background:var(--gb);border:1px solid var(--gbr);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 10px rgba(13,79,122,0.04);}
+.eitem.ltrip{border-left:3px solid var(--ocean);}
+.eicon{font-size:22px;width:36px;text-align:center;flex-shrink:0;}
+.einfo{flex:1;min-width:0;}
+.ename{font-size:13px;font-weight:600;color:var(--dark);}
+.emeta{font-size:10px;color:var(--light);margin-top:2px;}
+.etag{font-size:9px;padding:2px 7px;background:rgba(45,142,197,0.1);border:1px solid rgba(45,142,197,0.18);color:var(--ocean);border-radius:8px;display:inline-block;margin-top:3px;}
+.eright{text-align:right;flex-shrink:0;}
+.ekrw{font-size:14px;font-weight:700;color:var(--dark);}
+.etwd{font-size:10px;color:var(--light);}
+.pchip{font-size:9px;padding:2px 7px;border-radius:8px;font-weight:600;display:inline-block;margin-top:3px;}
+.pk{background:rgba(224,82,82,0.1);color:var(--red);border:1px solid rgba(224,82,82,0.18);}
+.pt{background:rgba(45,142,197,0.1);color:var(--ocean2);border:1px solid rgba(45,142,197,0.18);}
+.pc{background:rgba(60,170,124,0.1);color:var(--green);border:1px solid rgba(60,170,124,0.18);}
+.pw{background:rgba(128,90,200,0.1);color:#7b5ba8;border:1px solid rgba(128,90,200,0.18);}
+
+/* CHART */
+.chart-wrap{position:relative;height:220px;margin:12px 0 8px;}
+.chart-legend{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--dark);}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+
+/* MODAL */
+.moverlay{position:fixed;inset:0;background:rgba(44,66,85,0.2);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:500;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s;}
+.moverlay.open{opacity:1;pointer-events:all;}
+.msheet{width:100%;max-width:430px;max-height:92vh;background:rgba(249,253,255,0.98);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:24px 24px 0 0;padding:20px 20px 44px;overflow-y:auto;transform:translateY(100%);transition:transform .32s cubic-bezier(.4,0,.2,1);}
+.moverlay.open .msheet{transform:translateY(0);}
+.mhandle{width:36px;height:4px;background:rgba(45,142,197,0.22);border-radius:2px;margin:0 auto 18px;}
+.mtitle{font-size:17px;font-weight:600;color:var(--dark);margin-bottom:18px;}
+
+/* FORM */
+.fg{margin-bottom:13px;}
+.flbl{font-size:11px;font-weight:600;color:var(--soft);margin-bottom:5px;letter-spacing:.4px;display:block;}
+.fi,.fs,.fta{width:100%;background:rgba(255,255,255,0.75);border:1px solid rgba(45,142,197,0.2);border-radius:var(--r-sm);padding:10px 13px;font-family:inherit;font-size:13px;color:var(--dark);outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none;}
+.fi:focus,.fs:focus,.fta:focus{border-color:var(--ocean);background:rgba(255,255,255,0.92);}
+.fs{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%232d8ec5' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
+.fta{resize:none;min-height:76px;line-height:1.5;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* CHECK */
+.ck-item{display:flex;align-items:center;gap:11px;padding:11px 13px;background:var(--gb);border:1px solid var(--gbr);border-radius:var(--r-sm);margin-bottom:7px;cursor:pointer;transition:all .18s;}
+.ck-box{width:22px;height:22px;border:1.5px solid rgba(45,142,197,0.38);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;background:rgba(255,255,255,0.6);}
+.ck-box.checked{background:var(--ocean);border-color:var(--ocean);}
+.ck-box.checked::after{content:'✓';color:#fff;font-size:13px;font-weight:700;}
+.ck-text{font-size:13px;color:var(--dark);flex:1;}
+.ck-item.done .ck-text{text-decoration:line-through;color:var(--soft);}
+
+/* PROGRESS */
+.pbar{height:5px;background:rgba(45,142,197,0.1);border-radius:3px;overflow:hidden;margin-bottom:18px;}
+.pfill{height:100%;background:linear-gradient(90deg,var(--ocean),var(--ocean2));border-radius:3px;transition:width .4s ease;}
+
+/* RATE NOTE */
+.rnote{background:rgba(91,158,201,0.07);border-left:3px solid rgba(91,158,201,0.5);padding:9px 12px;border-radius:0 8px 8px 0;font-size:11px;color:var(--mid);line-height:1.6;margin-top:10px;}
+
+/* LINK PICKER */
+.lp-item{display:flex;align-items:center;justify-content:space-between;padding:10px 13px;background:rgba(255,255,255,0.6);border:1px solid rgba(45,142,197,0.13);border-radius:10px;margin-bottom:7px;cursor:pointer;transition:all .18s;}
+.lp-item:hover{background:rgba(45,142,197,0.06);border-color:rgba(45,142,197,0.28);}
+.lp-item.sel{background:rgba(45,142,197,0.1);border-color:var(--ocean);}
+
+/* TOAST */
+.toast{position:fixed;bottom:calc(var(--nav-h)+14px);left:50%;transform:translateX(-50%) translateY(16px);background:rgba(44,66,85,0.82);color:#fff;font-size:12px;padding:10px 20px;border-radius:20px;backdrop-filter:blur(8px);z-index:1000;opacity:0;transition:all .28s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px 20px;color:var(--light);}
+.empty-i{font-size:42px;margin-bottom:12px;}
+.empty-t{font-size:13px;line-height:1.7;}
+
+/* WEATHER */
+.wgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:16px;}
+.wday{background:rgba(255,255,255,0.5);border-radius:10px;padding:9px 4px;text-align:center;border:1px solid rgba(45,142,197,0.1);}
+.wdn{font-size:9px;color:var(--soft);margin-bottom:5px;}
+.wdi{font-size:16px;margin-bottom:3px;}
+.wdt{font-size:11px;font-weight:600;color:var(--dark);}
+
+/* SHOP STORE CHIP */
+.store-chip{font-size:11px;padding:5px 11px;border-radius:20px;border:1px solid rgba(91,158,201,0.22);background:rgba(255,255,255,0.7);color:var(--mid);cursor:pointer;transition:all .18s;font-family:inherit;}
+.store-chip.active{background:rgba(91,158,201,0.18);border-color:rgba(91,158,201,0.55);color:var(--ocean2);font-weight:600;}
+
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(45,142,197,0.2);border-radius:2px;}
+
+/* ── GLOBAL TYPOGRAPHY TOKENS ── */
+/* 標題層級 */
+.t-page   {font-size:11px;font-weight:700;color:var(--soft);letter-spacing:1.8px;text-transform:uppercase;} /* 頁面區段標題 */
+.t-card   {font-size:12px;font-weight:700;color:var(--mid);letter-spacing:.5px;}                             /* 卡片標題 */
+.t-label  {font-size:10px;font-weight:600;color:var(--soft);letter-spacing:.6px;text-transform:uppercase;}   /* 欄位 label */
+.t-body   {font-size:13px;font-weight:400;color:var(--dark);line-height:1.6;}                                /* 內文 */
+.t-body-b {font-size:13px;font-weight:600;color:var(--dark);}                                                /* 強調內文 */
+.t-value  {font-size:14px;font-weight:700;color:var(--dark);}                                                /* 數值/金額 */
+.t-sub    {font-size:11px;font-weight:400;color:var(--light);line-height:1.5;}                               /* 副文字 */
+.t-micro  {font-size:10px;font-weight:400;color:var(--light);}                                               /* 極小說明 */
+.t-kr     {font-size:14px;font-weight:600;color:var(--dark);}                                                /* 韓文大字 */
+.t-amount {font-size:15px;font-weight:700;color:var(--dark);}                                                /* 金額強調 */
+
+/* ── KEY-VALUE 對齊行 ── */
+/* 用法：<div class="kv-row"><span class="kv-k">標籤</span><span class="kv-v">值</span></div> */
+.kv-row {
+  display:flex;align-items:baseline;justify-content:space-between;
+  padding:7px 0;border-bottom:1px solid rgba(91,158,201,0.07);
+  gap:12px;
+}
+.kv-row:last-child{border-bottom:none;}
+.kv-k   {font-size:12px;color:var(--mid);font-weight:400;white-space:nowrap;flex-shrink:0;}
+.kv-v   {font-size:13px;color:var(--dark);font-weight:600;text-align:right;}
+.kv-v.kr{font-size:14px;color:var(--ocean2);}
+
+/* ── INFO BLOCK（label 上 / value 下） ── */
+.ib{display:flex;flex-direction:column;gap:2px;}
+.ib-l{font-size:10px;font-weight:600;color:var(--soft);letter-spacing:.5px;text-transform:uppercase;}
+.ib-v{font-size:13px;font-weight:600;color:var(--dark);}
+.ib-s{font-size:11px;color:var(--light);}
+
+/* ── ICON-TEXT ROW ── */
+.itr{display:flex;gap:11px;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(91,158,201,0.07);}
+.itr:last-child{border-bottom:none;}
+.itr-ic{font-size:18px;flex-shrink:0;line-height:1.3;}
+.itr-body{flex:1;}
+.itr-title{font-size:13px;font-weight:600;color:var(--dark);margin-bottom:2px;}
+.itr-sub  {font-size:11px;color:var(--light);line-height:1.5;}
+
+/* ── SECTION DIVIDER ── */
+.sdiv{margin:18px 0 10px;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="hlogo">
+    <span class="flag">🌊</span>
+    <div><div class="logo-t">釜山旅遊</div><div class="logo-s" id="hDate"></div><div class="logo-s" id="syncBadge" style="margin-top:1px;">⏳ 連線中</div></div>
+  </div>
+  <button class="gb sm" onclick="openAddModal()">＋ 新增</button>
+</div>
+
+<div class="content">
+  <div class="page active" id="page-home"><div id="homeC"></div></div>
+  <div class="page" id="page-itinerary"><div id="itinC"></div></div>
+  <div class="page" id="page-expense"><div id="expC"></div></div>
+  <div class="page" id="page-weather"><div id="wxC"></div></div>
+  <div class="page" id="page-food"><div id="foodC"></div></div>
+  <div class="page" id="page-checklist"><div id="ckC"></div></div>
+  <div class="page" id="page-shopping"><div id="shopC"></div></div>
+  <div class="page" id="page-emergency"><div id="emgC"></div></div>
+</div>
+
+<div class="bnav">
+  <div class="ni active" onclick="navTo('home')" id="nav-home"><div class="ni-icon">🏠</div><div class="ni-lbl">首頁</div><div class="ndot"></div></div>
+  <div class="ni" onclick="navTo('itinerary')" id="nav-itinerary"><div class="ni-icon">📅</div><div class="ni-lbl">行程</div><div class="ndot"></div></div>
+  <div class="ni" onclick="navTo('expense')" id="nav-expense"><div class="ni-icon">💳</div><div class="ni-lbl">記帳</div><div class="ndot"></div></div>
+  <div class="ni" onclick="navTo('weather')" id="nav-weather"><div class="ni-icon">⛅</div><div class="ni-lbl">天氣</div><div class="ndot"></div></div>
+  <div class="ni" onclick="navTo('food')" id="nav-food"><div class="ni-icon">🍜</div><div class="ni-lbl">用餐</div><div class="ndot"></div></div>
+  <div class="ni" onclick="navTo('checklist')" id="nav-checklist"><div class="ni-icon">✅</div><div class="ni-lbl">行前</div><div class="ndot"></div></div>
+  <div class="ni" onclick="navTo('shopping')" id="nav-shopping"><div class="ni-icon">🛍</div><div class="ni-lbl">購物</div><div class="ndot"></div></div>
+  <div class="ni" onclick="navTo('emergency')" id="nav-emergency"><div class="ni-icon">🆘</div><div class="ni-lbl">緊急</div><div class="ndot"></div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Trip Modal -->
+<div class="moverlay" id="tripModal">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <div class="mtitle" id="tripMT">新增行程</div>
+    <div class="fg"><label class="flbl">日期</label><input type="date" class="fi" id="tDate"></div>
+    <div class="frow">
+      <div class="fg"><label class="flbl">時間</label><input type="time" class="fi" id="tTime"></div>
+      <div class="fg"><label class="flbl">類型</label>
+        <select class="fs" id="tType"><option>景點</option><option>餐廳</option><option>購物</option><option>交通</option><option>住宿</option><option>其他</option></select>
+      </div>
+    </div>
+    <div class="fg"><label class="flbl">地點名稱</label><input type="text" class="fi" id="tName" placeholder="例：해운대 해수욕장（海雲台海水浴場）"></div>
+    <div class="fg"><label class="flbl">地址（韓文，用於導航）</label><input type="text" class="fi" id="tAddr" placeholder="例：부산 해운대구 해운대해변로 264"></div>
+    <div class="fg"><label class="flbl">備註</label><textarea class="fta" id="tNote" placeholder="開放時間、注意事項…"></textarea></div>
+    <div class="fg"><label class="flbl">預約資訊</label><textarea class="fta" id="tResv" placeholder="預約號碼、連結…" style="min-height:58px;"></textarea></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px;">
+      <button class="gb" onclick="closeTripM()">取消</button>
+      <button class="gb pri" onclick="saveTrip()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Expense Modal -->
+<div class="moverlay" id="expModal">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <div class="mtitle" id="expMT">新增支出</div>
+    <div class="fg"><label class="flbl">項目名稱</label><input type="text" class="fi" id="eName" placeholder="例：밀면（釜山冷麵）、T-money…"></div>
+    <div class="fg"><label class="flbl">類別</label>
+      <select class="fs" id="eCat"><option>🍽 餐飲</option><option>🚌 交通</option><option>🛍 購物</option><option>🏖 景點</option><option>🏨 住宿</option><option>💊 醫藥</option><option>📦 其他</option></select>
+    </div>
+    <div class="frow">
+      <div class="fg"><label class="flbl">金額</label><input type="number" class="fi" id="eAmt" placeholder="0"></div>
+      <div class="fg"><label class="flbl">幣別</label>
+        <select class="fs" id="eCur"><option value="KRW">韓元 ₩</option><option value="TWD">台幣 NT$</option></select>
+      </div>
+    </div>
+    <div class="fg"><label class="flbl">付款方式</label>
+      <select class="fs" id="ePay"><option value="krw-cash">韓元現金</option><option value="twd-cash">台幣現金</option><option value="credit-card">信用卡</option><option value="wowpass">WOWPASS</option></select>
+    </div>
+    <div class="frow">
+      <div class="fg"><label class="flbl">日期</label><input type="date" class="fi" id="eDate"></div>
+      <div class="fg"><label class="flbl">關聯行程（選填）</label>
+        <select class="fs" id="eTripLink"><option value="">無</option></select>
+      </div>
+    </div>
+    <div class="fg"><label class="flbl">備註</label><input type="text" class="fi" id="eNote" placeholder="選填"></div>
+    <div class="rnote" id="rNote" style="display:none;"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+      <button class="gb" onclick="closeExpM()">取消</button>
+      <button class="gb pri" onclick="saveExp()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Chart Modal -->
+<div class="moverlay" id="chartModal">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <div class="mtitle">花費統計圖表</div>
+    <div id="chartC"></div>
+    <div style="text-align:center;margin-top:18px;"><button class="gb" onclick="closeChart()">關閉</button></div>
+  </div>
+</div>
+
+<!-- Link Modal -->
+<div class="moverlay" id="linkModal">
+  <div class="msheet" id="linkMS"></div>
+</div>
+
+<!-- Check Modal -->
+<div class="moverlay" id="ckModal">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <div class="mtitle">新增行前確認項目</div>
+    <div class="fg"><label class="flbl">類別</label>
+      <select class="fs" id="ckCat"><option>🛂 證件</option><option>💊 藥品</option><option>👗 衣物</option><option>🔌 電子設備</option><option>💰 財務</option><option>📱 APP</option><option>🧴 盥洗用品</option><option>📦 其他</option></select>
+    </div>
+    <div class="fg"><label class="flbl">項目名稱</label><input type="text" class="fi" id="ckName" placeholder="例：護照、防曬乳…"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px;">
+      <button class="gb" onclick="closeCkM()">取消</button>
+      <button class="gb pri" onclick="saveCk()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Shop Modal -->
+<div class="moverlay" id="shopModal">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <div class="mtitle" id="shopMT">新增購物清單</div>
+
+    <div class="fg">
+      <label class="flbl">商品名稱</label>
+      <input type="text" class="fi" id="shName" placeholder="例：韓國面膜、海苔、防曬乳…">
+    </div>
+
+    <div class="fg">
+      <label class="flbl">類別</label>
+      <select class="fs" id="shTag">
+        <option>美妝</option><option>保養</option><option>食品</option><option>零食</option>
+        <option>服飾</option><option>文創</option><option>保健</option><option>電子</option><option>其他</option>
+      </select>
+    </div>
+
+    <div class="fg">
+      <label class="flbl">購買地點（可選 / 可自填 / 可空白）</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;" id="storeChips">
+        <button type="button" onclick="selectStore('Olive Young')" class="store-chip" id="chip-OliveYoung">Olive Young</button>
+        <button type="button" onclick="selectStore('大創 DAISO')" class="store-chip" id="chip-Daiso">大創 DAISO</button>
+        <button type="button" onclick="selectStore('樂天超市')" class="store-chip" id="chip-Lotte">樂天超市</button>
+        <button type="button" onclick="selectStore('GS25 / CU')" class="store-chip" id="chip-GS25">GS25 / CU</button>
+        <button type="button" onclick="selectStore('自由市場')" class="store-chip" id="chip-Jayou">自由市場</button>
+        <button type="button" onclick="selectStore('자갈치市場')" class="store-chip" id="chip-Jagalchi">자갈치市場</button>
+        <button type="button" onclick="selectStore('南浦洞地下街')" class="store-chip" id="chip-Nampodong">南浦洞地下街</button>
+        <button type="button" onclick="selectStore('免稅店')" class="store-chip" id="chip-DutyFree">免稅店</button>
+        <button type="button" onclick="selectStore('藥妝店')" class="store-chip" id="chip-Pharmacy">藥妝店</button>
+      </div>
+      <input type="text" class="fi" id="shStore"
+        placeholder="或自行輸入店名（可空白）…"
+        list="storeList" oninput="clearChips()">
+      <datalist id="storeList">
+        <option value="Olive Young">
+        <option value="大創 DAISO">
+        <option value="樂天超市">
+        <option value="GS25 / CU">
+        <option value="自由市場">
+        <option value="자갈치市場">
+        <option value="南浦洞地下街">
+        <option value="免稅店">
+        <option value="藥妝店">
+        <option value="편의점（便利商店）">
+        <option value="홈플러스（Home Plus）">
+        <option value="이마트（E-Mart）">
+      </datalist>
+    </div>
+
+    <div class="fg">
+      <label class="flbl">預算 / 備註（選填）</label>
+      <input type="text" class="fi" id="shNote" placeholder="例：₩15,000 以內、要找特定款式…">
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px;">
+      <button class="gb" onclick="closeShopM()">取消</button>
+      <button class="gb pri" onclick="saveShop()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ── CONFIG ──
+const TRIP_START = new Date('2026-08-19');
+const TRIP_END   = new Date('2026-08-22');
+let KRW_TO_TWD   = 0.023;
+
+// ══════════════════════════════════════════════════════
+// FIREBASE 設定與初始化
+// ══════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyCjXaX7fi7Hrvgm7_ovYWSSlKJNijsFIQU",
+  authDomain: "busan-fc51d.firebaseapp.com",
+  projectId: "busan-fc51d",
+  storageBucket: "busan-fc51d.firebasestorage.app",
+  messagingSenderId: "234445435282",
+  appId: "1:234445435282:web:d667a677cac15fda30914b",
+  measurementId: "G-WQ18CDNWWF"
+};
+
+const ACCESS_CODE = "0530"; // 必須與 Firestore 規則裡設定的通行碼完全一致
+
+let fbDb = null;
+let fbReady = false;
+let fbSyncStatus = 'connecting'; // connecting | online | offline | error
+
+try {
+  firebase.initializeApp(firebaseConfig);
+  fbDb = firebase.firestore();
+  fbReady = true;
+} catch (e) {
+  console.error('Firebase 初始化失敗:', e);
+  fbSyncStatus = 'error';
+}
+
+// ══════════════════════════════════════════════════════
+// 資料儲存層 (DATA STORAGE LAYER)
+// localStorage 當本機快取（離線可用、開啟瞬間先顯示）
+// Firestore 當雲端同步（多人共用、跨裝置）
+// 策略：本機優先顯示 → 背景連線 Firestore → 有資料就覆蓋畫面 → 之後寫入雙邊都更新
+// ══════════════════════════════════════════════════════
+
+const K = {trips:'bs_trips_v4',expenses:'bs_exp_v4',checklist:'bs_ck_v4',shopping:'bs_sh_v4',rate:'bs_rate_v4'};
+const ld = k => { try{return JSON.parse(localStorage.getItem(k)||'[]');}catch{return[];} };
+
+// 本機寫入（永遠先做，確保離線也能用）
+function svLocal(k,d){ localStorage.setItem(k,JSON.stringify(d)); }
+
+// 雲端寫入（背景進行，失敗不影響本機操作）
+async function svCloud(k, d){
+  if(!fbReady || !fbDb) return;
+  try{
+    await fbDb.collection('trip_data').doc(k).set({
+      items: d,
+      accessCode: ACCESS_CODE,
+      updatedAt: Date.now(),
+      updatedAtReadable: new Date().toLocaleString('zh-TW'),
+    });
+    fbSyncStatus = 'online';
+  }catch(e){
+    console.error('雲端寫入失敗:', k, e);
+    fbSyncStatus = 'error';
+  }
+  updateSyncBadge();
+}
+
+// 統一寫入介面：本機立即寫，雲端背景同步
+function sv(k, d){
+  svLocal(k, d);
+  svCloud(k, d);
+}
+
+// 從 Firestore 讀取單一 key 的資料
+async function ldCloud(k){
+  if(!fbReady || !fbDb) return null;
+  try{
+    const snap = await fbDb.collection('trip_data').doc(k).get();
+    if(snap.exists) return snap.data().items || [];
+    return null;
+  }catch(e){
+    console.error('雲端讀取失敗:', k, e);
+    return null;
+  }
+}
+
+let trips    = ld(K.trips);
+let expenses = ld(K.expenses);
+let checklist = ld(K.checklist);
+let shopping  = ld(K.shopping);
+const savedRate = localStorage.getItem(K.rate);
+if(savedRate) KRW_TO_TWD = parseFloat(savedRate);
+
+// 啟動時從雲端拉取最新資料，蓋過本機（確保多人同步看到最新版本）
+async function syncFromCloud(){
+  if(!fbReady || !fbDb){ fbSyncStatus='offline'; updateSyncBadge(); return; }
+  try{
+    const keys = [
+      {key:K.trips, setter:d=>{trips=d;}},
+      {key:K.expenses, setter:d=>{expenses=d;}},
+      {key:K.checklist, setter:d=>{checklist=d;}},
+      {key:K.shopping, setter:d=>{shopping=d;}},
+    ];
+    let gotAny = false;
+    for(const {key, setter} of keys){
+      const cloudData = await ldCloud(key);
+      if(cloudData !== null){
+        setter(cloudData);
+        svLocal(key, cloudData); // 更新本機快取
+        gotAny = true;
+      }
+    }
+    fbSyncStatus = 'online';
+    if(gotAny) renderPage(curPage);
+  }catch(e){
+    console.error('同步失敗:', e);
+    fbSyncStatus = 'error';
+  }
+  updateSyncBadge();
+}
+
+// 即時監聽雲端變化（其他人改動資料時自動更新畫面）
+function listenToCloud(){
+  if(!fbReady || !fbDb) return;
+  const watchers = [
+    {key:K.trips, setter:d=>{trips=d;}},
+    {key:K.expenses, setter:d=>{expenses=d;}},
+    {key:K.checklist, setter:d=>{checklist=d;}},
+    {key:K.shopping, setter:d=>{shopping=d;}},
+  ];
+  watchers.forEach(({key, setter}) => {
+    fbDb.collection('trip_data').doc(key).onSnapshot(
+      (snap) => {
+        if(snap.exists){
+          const data = snap.data().items || [];
+          setter(data);
+          svLocal(key, data);
+          renderPage(curPage);
+          fbSyncStatus = 'online';
+          updateSyncBadge();
+        }
+      },
+      (err) => {
+        console.error('監聽失敗:', key, err);
+        fbSyncStatus = 'error';
+        updateSyncBadge();
+      }
+    );
+  });
+}
+
+// 同步狀態小標籤（顯示在 header）
+function updateSyncBadge(){
+  const el = document.getElementById('syncBadge');
+  if(!el) return;
+  const map = {
+    connecting: {icon:'⏳', text:'連線中', color:'var(--soft)'},
+    online:     {icon:'☁️', text:'已同步', color:'var(--green)'},
+    offline:    {icon:'📴', text:'離線模式', color:'var(--light)'},
+    error:      {icon:'⚠️', text:'同步失敗', color:'var(--red)'},
+  };
+  const s = map[fbSyncStatus] || map.connecting;
+  el.innerHTML = `<span style="color:${s.color};">${s.icon} ${s.text}</span>`;
+}
+
+// ── DEFAULT CHECKLIST (完整版) ──
+if(!checklist.length){
+  checklist=[
+    // 證件
+    {id:101,category:'🛂 證件',name:'護照（確認效期6個月以上）',done:false},
+    {id:102,category:'🛂 證件',name:'台灣健保卡',done:false},
+    {id:103,category:'🛂 證件',name:'信用卡（正本）',done:false},
+    {id:104,category:'🛂 證件',name:'機票確認信截圖',done:false},
+    {id:105,category:'🛂 證件',name:'住宿訂單截圖',done:false},
+    // 財務
+    {id:201,category:'💰 財務',name:'換韓元現金（建議出發前在台灣換）',done:false},
+    {id:202,category:'💰 財務',name:'WOWPASS 申辦 / 儲值',done:false},
+    {id:203,category:'💰 財務',name:'確認信用卡海外手續費',done:false},
+    {id:204,category:'💰 財務',name:'通知銀行出國使用信用卡',done:false},
+    // 電子設備
+    {id:301,category:'🔌 電子設備',name:'手機充電線',done:false},
+    {id:302,category:'🔌 電子設備',name:'行動電源（容量20000以上建議）',done:false},
+    {id:303,category:'🔌 電子設備',name:'轉接頭（韓規A型/C型）',done:false},
+    {id:304,category:'🔌 電子設備',name:'相機 / 記憶卡',done:false},
+    {id:305,category:'🔌 電子設備',name:'耳機',done:false},
+    // APP
+    {id:401,category:'📱 APP',name:'Naver Map 下載並登入',done:false},
+    {id:402,category:'📱 APP',name:'Kakao T（計程車叫車）',done:false},
+    {id:403,category:'📱 APP',name:'Papago 翻譯（可離線）',done:false},
+    {id:404,category:'📱 APP',name:'Google Maps 離線釜山地圖下載',done:false},
+    {id:405,category:'📱 APP',name:'Korail / 交通卡 APP',done:false},
+    // 藥品
+    {id:501,category:'💊 藥品',name:'腸胃藥（止瀉 / 消化）',done:false},
+    {id:502,category:'💊 藥品',name:'感冒藥',done:false},
+    {id:503,category:'💊 藥品',name:'止痛藥（普拿疼）',done:false},
+    {id:504,category:'💊 藥品',name:'暈車藥（若需搭船）',done:false},
+    {id:505,category:'💊 藥品',name:'OK繃 / 防水貼',done:false},
+    // 衣物
+    {id:601,category:'👗 衣物',name:'輕薄透氣衣物（8月高溫）',done:false},
+    {id:602,category:'👗 衣物',name:'泳裝（海雲台・廣安里海灘）',done:false},
+    {id:603,category:'👗 衣物',name:'舒適步行鞋（甘川文化村坡道多）',done:false},
+    {id:604,category:'👗 衣物',name:'防曬外套 / 薄外套（室內冷氣強）',done:false},
+    {id:605,category:'👗 衣物',name:'折疊雨傘（午後偶有陣雨）',done:false},
+    {id:606,category:'👗 衣物',name:'防水袋 / 海灘袋',done:false},
+    // 盥洗用品
+    {id:701,category:'🧴 盥洗用品',name:'防曬乳 SPF50+（海邊必備）',done:false},
+    {id:702,category:'🧴 盥洗用品',name:'防蚊液（夏天戶外）',done:false},
+    {id:703,category:'🧴 盥洗用品',name:'濕紙巾 / 個人衛生用品',done:false},
+    {id:704,category:'🧴 盥洗用品',name:'保溼乳（冷氣房補水）',done:false},
+  ];
+  sv(K.checklist,checklist);
+}
+
+// ── NAV ──
+let curPage='home';
+function navTo(p){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.getElementById('nav-'+p).classList.add('active');
+  curPage=p; renderPage(p);
+}
+function renderPage(p){({home:renderHome,itinerary:renderItin,expense:renderExp,weather:renderWx,food:renderFood,checklist:renderCk,shopping:renderShop,emergency:renderEmg}[p]||(() => {}))();}
+
+// ── DATE ──
+function updateDate(){
+  const d=new Date(),days=['日','一','二','三','四','五','六'];
+  document.getElementById('hDate').textContent=`${d.getMonth()+1}/${d.getDate()} 週${days[d.getDay()]}`;
+}
+
+// ── TOTALS ──
+function totalKRW(){return expenses.reduce((s,e)=>e.currency==='KRW'?s+Number(e.amount):s,0);}
+function totalTWD(){return expenses.reduce((s,e)=>e.currency==='KRW'?s+Number(e.amount)*KRW_TO_TWD:s+Number(e.amount),0);}
+
+// ── HOME ──
+function renderHome(){
+  const now=new Date();now.setHours(0,0,0,0);
+  const s=new Date(TRIP_START);s.setHours(0,0,0,0);
+  const e=new Date(TRIP_END);e.setHours(0,0,0,0);
+  const inTrip=now>=s&&now<=e;
+  const el=document.getElementById('homeC');
+  const doneC=checklist.filter(c=>c.done).length;
+  const kTotal=totalKRW();
+
+  if(inTrip){
+    const ts=fmtD(now);
+    const td=trips.filter(t=>t.date===ts).sort((a,b)=>a.time.localeCompare(b.time));
+    let h=`<div class="hero"><div class="hero-d">📍 釜山 · ${now.getMonth()+1}月${now.getDate()}日</div><div class="hero-t">今日行程</div><div class="hero-s">🌊 享受夏日釜山</div></div>`;
+    if(!td.length)h+=`<div class="empty"><div class="empty-i">📭</div><div class="empty-t">今天還沒有行程<br>點右上角＋新增</div></div>`;
+    else td.forEach(t=>{h+=tItemHTML(t);});
+    h+=`<div class="sec-title">快速功能</div><div class="fgrid">
+      <div class="fcrd" onclick="navTo('expense')"><div class="fci">💳</div><div class="fcn">記帳</div><div class="fcs">₩${kTotal.toLocaleString()}</div></div>
+      <div class="fcrd" onclick="navTo('food')"><div class="fci">🍜</div><div class="fcn">周邊用餐</div><div class="fcs">혼밥 搜尋</div></div>
+      <div class="fcrd" onclick="navTo('weather')"><div class="fci">⛅</div><div class="fcn">天氣</div><div class="fcs">釜山即時天氣</div></div>
+      <div class="fcrd" onclick="navTo('shopping')"><div class="fci">🛍</div><div class="fcn">購物清單</div><div class="fcs">${shopping.length} 件商品</div></div>
+    </div>`;
+    h+=calcHTML();
+    el.innerHTML=h;
+  }else{
+    el.innerHTML=`<div class="hero"><div class="hero-d">🌊 夏日釜山旅遊計畫</div><div class="hero-t">2026 / 8/19 — 8/22</div><div class="hero-s">出發前準備中 · ${doneC}/${checklist.length} 行前項目完成</div></div>
+    <div class="fgrid">
+      <div class="fcrd" onclick="navTo('itinerary')"><div class="fci">📅</div><div class="fcn">行程一覽</div><div class="fcs">${trips.length} 個地點</div></div>
+      <div class="fcrd" onclick="navTo('expense')"><div class="fci">💳</div><div class="fcn">記帳一覽</div><div class="fcs">₩${totalKRW().toLocaleString()}</div></div>
+      <div class="fcrd" onclick="navTo('weather')"><div class="fci">⛅</div><div class="fcn">天氣預報</div><div class="fcs">釜山 8月天氣</div></div>
+      <div class="fcrd" onclick="navTo('food')"><div class="fci">🍜</div><div class="fcn">周邊用餐</div><div class="fcs">Naver 혼밥</div></div>
+      <div class="fcrd" onclick="navTo('checklist')"><div class="fci">✅</div><div class="fcn">行前確認</div><div class="fcs">${doneC}/${checklist.length} 完成</div></div>
+      <div class="fcrd" onclick="navTo('shopping')"><div class="fci">🛍</div><div class="fcn">購物清單</div><div class="fcs">${shopping.length} 件商品</div></div>
+    </div>
+    ${calcHTML()}
+    ${dataBackupHTML()}`;
+  }
+}
+
+// ── 資料備份 / 匯出匯入（過渡用，未來接 Firebase 前先用這個防止資料遺失）──
+function dataBackupHTML(){
+  return `<div style="margin-top:14px;padding:14px 16px;border-radius:14px;
+              background:rgba(255,255,255,0.6);border:1px solid rgba(91,158,201,0.12);">
+    <div style="font-size:11px;font-weight:600;color:var(--soft);letter-spacing:.5px;margin-bottom:8px;">
+      💾 資料備份（目前儲存在本機瀏覽器，清快取會遺失）
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="gb sm" onclick="exportData()" style="flex:1;justify-content:center;">⬇️ 匯出備份</button>
+      <button class="gb sm" onclick="document.getElementById('importFile').click()" style="flex:1;justify-content:center;">⬆️ 匯入備份</button>
+    </div>
+    <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(this.files[0])">
+  </div>`;
+}
+
+function exportData(){
+  const backup = {
+    trips, expenses, checklist, shopping,
+    exchangeRate: KRW_TO_TWD,
+    exportedAt: new Date().toISOString(),
+    appVersion: 'busan-trip-v4',
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `busan-trip-backup-${fmtD(new Date())}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('✅ 已下載備份檔案');
+}
+
+function importData(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try{
+      const data = JSON.parse(e.target.result);
+      if(!confirm('匯入將覆蓋目前所有資料（行程、記帳、清單），確定要繼續嗎？')) return;
+      trips = data.trips || [];
+      expenses = data.expenses || [];
+      checklist = data.checklist || [];
+      shopping = data.shopping || [];
+      sv(K.trips, trips);
+      sv(K.expenses, expenses);
+      sv(K.checklist, checklist);
+      sv(K.shopping, shopping);
+      if(data.exchangeRate){
+        KRW_TO_TWD = data.exchangeRate;
+        localStorage.setItem(K.rate, KRW_TO_TWD.toString());
+      }
+      renderPage(curPage);
+      showToast('✅ 資料已匯入');
+    }catch(err){
+      showToast('❌ 檔案格式錯誤，請確認是正確的備份檔');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ── MINI CALCULATOR ──
+function calcHTML(){
+  return `<div style="background:rgba(255,255,255,0.85);border:1px solid rgba(91,158,201,0.16);
+               border-radius:18px;padding:16px 16px 14px;margin-top:12px;
+               box-shadow:0 3px 16px rgba(58,127,168,0.07),inset 0 1px 0 rgba(255,255,255,0.9);">
+
+    <!-- 標題列 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:700;color:var(--mid);letter-spacing:.5px;">💱 韓元換算</div>
+      <div style="display:flex;gap:6px;">
+        <button id="calcDir0" onclick="setDir(0)"
+          style="font-size:11px;padding:4px 11px;border-radius:20px;border:1.5px solid rgba(91,158,201,0.5);
+                 background:rgba(91,158,201,0.18);color:var(--ocean2);font-weight:600;cursor:pointer;">
+          KRW → TWD
+        </button>
+        <button id="calcDir1" onclick="setDir(1)"
+          style="font-size:11px;padding:4px 11px;border-radius:20px;border:1px solid rgba(91,158,201,0.18);
+                 background:rgba(255,255,255,0.6);color:var(--soft);font-weight:500;cursor:pointer;">
+          TWD → KRW
+        </button>
+      </div>
+    </div>
+
+    <!-- 輸入列 -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <div style="position:relative;flex:1;">
+        <span id="calcInUnit"
+          style="position:absolute;left:12px;top:50%;transform:translateY(-50%);
+                 font-size:13px;font-weight:600;color:var(--soft);pointer-events:none;">₩</span>
+        <input id="calcIn" type="number" inputmode="numeric" placeholder="輸入金額"
+          oninput="calcConvert()"
+          style="width:100%;padding:11px 12px 11px 28px;border-radius:12px;
+                 border:1.5px solid rgba(91,158,201,0.25);background:rgba(248,252,255,0.9);
+                 font-size:18px;font-weight:600;color:var(--dark);font-family:inherit;
+                 outline:none;-webkit-appearance:none;appearance:none;">
+      </div>
+      <div style="font-size:20px;color:var(--soft);flex-shrink:0;">＝</div>
+      <div style="flex:1;padding:11px 12px;border-radius:12px;min-height:46px;
+                  background:rgba(91,158,201,0.07);border:1.5px solid rgba(91,158,201,0.15);
+                  display:flex;align-items:center;gap:4px;">
+        <span id="calcOutUnit" style="font-size:13px;font-weight:600;color:var(--soft);">NT$</span>
+        <span id="calcOut" style="font-size:18px;font-weight:700;color:var(--ocean2);">—</span>
+      </div>
+    </div>
+
+    <!-- 快速金額按鈕 -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;" id="calcQuickBtns">
+      ${[1000,3000,5000,10000,30000,50000].map(v=>`
+      <button onclick="quickCalc(${v})"
+        style="font-size:11px;padding:5px 10px;border-radius:20px;
+               border:1px solid rgba(91,158,201,0.2);background:rgba(255,255,255,0.7);
+               color:var(--mid);cursor:pointer;font-weight:500;transition:all .15s;">
+        ${v>=10000?v/10000+'萬':v.toLocaleString()}
+      </button>`).join('')}
+    </div>
+
+    <!-- 匯率設定列 -->
+    <div style="padding-top:10px;border-top:1px solid rgba(91,158,201,0.1);">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:11px;color:var(--mid);white-space:nowrap;">1,000 KRW ＝ NT$</span>
+        <input id="rateInput" type="number" inputmode="decimal"
+          value="${(KRW_TO_TWD*1000).toFixed(2)}"
+          step="0.01" min="0.001"
+          onchange="updateManualRate(this.value)"
+          style="width:80px;padding:5px 8px;border-radius:8px;
+                 border:1px solid rgba(91,158,201,0.28);background:rgba(248,252,255,0.9);
+                 font-size:13px;font-weight:700;color:var(--ocean2);text-align:center;
+                 font-family:inherit;outline:none;-webkit-appearance:none;">
+        <div style="flex:1;">
+          <div style="font-size:10px;color:var(--light);line-height:1.5;">手動輸入台銀即期賣出匯率<br>儲存後全APP生效</div>
+        </div>
+        <a href="https://rate.bot.com.tw/xrt?Lang=zh-TW" target="_blank"
+          onclick="window.open('https://rate.bot.com.tw/xrt?Lang=zh-TW','_blank');return false;"
+          style="font-size:10px;padding:5px 10px;border-radius:20px;
+                 background:rgba(91,158,201,0.12);border:1px solid rgba(91,158,201,0.25);
+                 color:var(--ocean2);text-decoration:none;white-space:nowrap;font-weight:600;">
+          查台銀
+        </a>
+      </div>
+      <div id="rateUpdatedInfo" style="font-size:10px;color:var(--light);margin-top:5px;text-align:right;">
+        ${RATE_UPDATED!=='—'?'上次更新：'+RATE_UPDATED:'尚未設定，預設值 '+((KRW_TO_TWD*1000).toFixed(2))}
+      </div>
+    </div>
+  </div>`;
+}
+
+let calcDirection=0; // 0=KRW→TWD, 1=TWD→KRW
+function setDir(d){
+  calcDirection=d;
+  const b0=document.getElementById('calcDir0');
+  const b1=document.getElementById('calcDir1');
+  const inU=document.getElementById('calcInUnit');
+  const outU=document.getElementById('calcOutUnit');
+  const inp=document.getElementById('calcIn');
+  const quickBtns=document.getElementById('calcQuickBtns');
+  if(!b0) return;
+  if(d===0){
+    b0.style.background='rgba(91,158,201,0.18)';b0.style.border='1.5px solid rgba(91,158,201,0.5)';b0.style.color='var(--ocean2)';b0.style.fontWeight='600';
+    b1.style.background='rgba(255,255,255,0.6)';b1.style.border='1px solid rgba(91,158,201,0.18)';b1.style.color='var(--soft)';b1.style.fontWeight='500';
+    if(inU) inU.textContent='₩';
+    if(outU) outU.textContent='NT$';
+    if(inp) inp.placeholder='輸入韓元';
+    if(quickBtns) quickBtns.innerHTML=[1000,3000,5000,10000,30000,50000].map(v=>`<button onclick="quickCalc(${v})" style="font-size:11px;padding:5px 10px;border-radius:20px;border:1px solid rgba(91,158,201,0.2);background:rgba(255,255,255,0.7);color:var(--mid);cursor:pointer;font-weight:500;">${v>=10000?v/10000+'萬':v.toLocaleString()}</button>`).join('');
+  }else{
+    b1.style.background='rgba(91,158,201,0.18)';b1.style.border='1.5px solid rgba(91,158,201,0.5)';b1.style.color='var(--ocean2)';b1.style.fontWeight='600';
+    b0.style.background='rgba(255,255,255,0.6)';b0.style.border='1px solid rgba(91,158,201,0.18)';b0.style.color='var(--soft)';b0.style.fontWeight='500';
+    if(inU) inU.textContent='NT$';
+    if(outU) outU.textContent='₩';
+    if(inp) inp.placeholder='輸入台幣';
+    if(quickBtns) quickBtns.innerHTML=[100,200,500,1000,2000,5000].map(v=>`<button onclick="quickCalc(${v})" style="font-size:11px;padding:5px 10px;border-radius:20px;border:1px solid rgba(91,158,201,0.2);background:rgba(255,255,255,0.7);color:var(--mid);cursor:pointer;font-weight:500;">${v}</button>`).join('');
+  }
+  if(inp) inp.value='';
+  const out=document.getElementById('calcOut');
+  if(out) out.textContent='—';
+}
+
+function quickCalc(val){
+  const inp=document.getElementById('calcIn');
+  if(inp){ inp.value=val; calcConvert(); }
+}
+
+function calcConvert(){
+  const inp=document.getElementById('calcIn');
+  const out=document.getElementById('calcOut');
+  if(!inp||!out) return;
+  const v=parseFloat(inp.value);
+  if(!v||isNaN(v)){ out.textContent='—'; return; }
+  if(calcDirection===0){
+    // KRW → TWD
+    const r=v*KRW_TO_TWD;
+    out.textContent=r<10?r.toFixed(2):Math.round(r).toLocaleString();
+  }else{
+    // TWD → KRW
+    const r=v/KRW_TO_TWD;
+    out.textContent=Math.round(r).toLocaleString();
+  }
+}
+
+// ── ITINERARY ──
+function renderItin(){
+  const dates=['2026-08-19','2026-08-20','2026-08-21','2026-08-22'];
+  const lbls=['Day 1','Day 2','Day 3','Day 4'];
+  const dlbls=['8/19 週三','8/20 週四','8/21 週五','8/22 週六'];
+  let h='';
+  dates.forEach((date,i)=>{
+    const dt=trips.filter(t=>t.date===date).sort((a,b)=>a.time.localeCompare(b.time));
+    h+=`<div class="dh"><span class="dbadge">${lbls[i]}</span><span class="ddate">${dlbls[i]}</span></div>`;
+    if(!dt.length)h+=`<div style="font-size:12px;color:var(--light);padding:6px 14px;margin-bottom:6px;">尚無行程</div>`;
+    else dt.forEach(t=>{h+=tItemHTML(t);});
+  });
+  const other=trips.filter(t=>!dates.includes(t.date));
+  if(other.length){h+=`<div class="dh"><span class="dbadge" style="background:var(--soft);">其他</span></div>`;other.forEach(t=>{h+=tItemHTML(t);});}
+  h+=`<div style="text-align:center;margin-top:16px;"><button class="gb pri" onclick="openAddTripM()">＋ 新增行程</button></div>`;
+  document.getElementById('itinC').innerHTML=h;
+}
+
+function tItemHTML(t){
+  const addr=t.address||t.name;
+  const nv=`https://map.naver.com/p/search/${encodeURIComponent(addr)}`;
+  const ub=`https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[formatted_address]=${encodeURIComponent(addr)}`;
+  const linked=expenses.filter(e=>e.tripId===t.id);
+  const lTotal=linked.reduce((s,e)=>e.currency==='KRW'?s+Number(e.amount):s+Number(e.amount)/KRW_TO_TWD,0);
+  const hasL=linked.length>0;
+  let lHTML='';
+  if(hasL){
+    lHTML=`<div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(45,142,197,0.1);"><div class="dlbl">💳 關聯花費（₩${Math.round(lTotal).toLocaleString()}）</div>`;
+    linked.forEach(e=>{lHTML+=`<div class="lexp-item"><span style="font-weight:500;color:var(--dark);">${e.category.split(' ')[0]} ${e.name}</span><span style="font-weight:700;color:var(--ocean2);">${e.currency==='KRW'?'₩':'NT$'}${Number(e.amount).toLocaleString()}</span></div>`;});
+    lHTML+='</div>';
+  }
+  return `<div class="titem${hasL?' linked':''}" onclick="toggleD('d-${t.id}')">
+    <div class="titem-top">
+      <span class="ttime">${t.time||'--:--'}</span>
+      <span class="tname">${t.name}</span>
+      <span class="ttag">${t.type||'景點'}</span>
+    </div>
+    <div class="tacts">
+      <button class="mapbtn" onclick="event.stopPropagation();window.open('${nv}','_blank')">🗺 NAVER MAP</button>
+      <button class="uberbtn" onclick="event.stopPropagation();window.open('${ub}','_blank')">🚗 UBER</button>
+      <button class="linkbtn" onclick="event.stopPropagation();openLinkM('${t.id}')">💳 關聯記帳</button>
+      <button class="gb sm" onclick="event.stopPropagation();editTrip('${t.id}')">✏️</button>
+      <button class="gb sm danger" onclick="event.stopPropagation();delTrip('${t.id}')">🗑</button>
+    </div>
+    <div class="tdetail" id="d-${t.id}">
+      ${t.note?`<div class="dlbl">備註</div><div class="dval">${t.note}</div>`:''}
+      ${t.reservation?`<div class="dlbl">預約資訊</div><div class="dval">${t.reservation}</div>`:''}
+      <div class="dlbl" style="margin-top:4px;">導航複製</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:11px;color:var(--mid);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📌 ${t.name}</span>
+          <button class="gb xs" style="flex-shrink:0;" onclick="event.stopPropagation();copyText('${t.name.replace(/'/g,"\\'")}','地點名稱')">複製</button>
+        </div>
+        ${t.address?`<div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:11px;color:var(--light);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">🗺 ${t.address}</span>
+          <button class="gb xs" style="flex-shrink:0;" onclick="event.stopPropagation();copyText('${t.address.replace(/'/g,"\\'")}','地址')">複製</button>
+        </div>`:''}
+      </div>
+      ${lHTML}
+      ${!t.note&&!t.reservation&&!hasL&&!t.address?'<div style="font-size:11px;color:var(--light);margin-top:4px;">無備註資訊</div>':''}
+    </div>
+  </div>`;
+}
+
+function toggleD(id){const el=document.getElementById(id);if(el)el.classList.toggle('open');}
+function delTrip(id){trips=trips.filter(t=>t.id!==id);expenses.forEach(e=>{if(e.tripId===id)e.tripId='';});sv(K.trips,trips);sv(K.expenses,expenses);renderPage(curPage);showToast('已刪除');}
+
+// ── LINK MODAL ──
+let linkingTId=null;
+function openLinkM(tId){
+  linkingTId=tId;
+  const trip=trips.find(t=>t.id===tId);
+  const linked=expenses.filter(e=>e.tripId===tId);
+  const unlinked=expenses.filter(e=>!e.tripId||e.tripId==='');
+  let h=`<div class="mhandle"></div><div class="mtitle">關聯記帳 ─ ${trip?trip.name:''}</div>`;
+  if(linked.length){
+    h+=`<div class="t-page sdiv" style="margin-top:0;">已關聯</div>`;
+    linked.forEach(e=>{
+      h+=`<div class="lp-item sel"><div><div style="font-size:13px;font-weight:600;">${e.name}</div><div style="font-size:10px;color:var(--light);">${e.date}</div></div>
+        <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:13px;font-weight:700;color:var(--ocean2);">${e.currency==='KRW'?'₩':'NT$'}${Number(e.amount).toLocaleString()}</span>
+        <button class="gb xs danger" onclick="unlinkE('${e.id}')">解除</button></div></div>`;
+    });
+  }
+  if(unlinked.length){
+    h+=`<div class="sec-title">未關聯支出</div>`;
+    unlinked.forEach(e=>{
+      h+=`<div class="lp-item" onclick="linkE('${e.id}','${tId}')"><div><div style="font-size:13px;font-weight:600;">${e.name}</div><div style="font-size:10px;color:var(--light);">${e.date} · ${e.category}</div></div>
+        <span style="font-size:13px;font-weight:700;color:var(--ocean2);">${e.currency==='KRW'?'₩':'NT$'}${Number(e.amount).toLocaleString()}</span></div>`;
+    });
+  }
+  if(!linked.length&&!unlinked.length)h+=`<div class="empty" style="padding:20px;"><div class="empty-t">尚無支出記錄</div></div>`;
+  h+=`<div style="text-align:center;margin-top:16px;"><button class="gb" onclick="closeLinkM()">完成</button></div>`;
+  document.getElementById('linkMS').innerHTML=h;
+  document.getElementById('linkModal').classList.add('open');
+}
+function linkE(eId,tId){const e=expenses.find(x=>x.id===eId);if(e){e.tripId=tId;sv(K.expenses,expenses);}openLinkM(tId);renderPage(curPage);}
+function unlinkE(eId){const e=expenses.find(x=>x.id===eId);if(e){e.tripId='';sv(K.expenses,expenses);}openLinkM(linkingTId);renderPage(curPage);}
+function closeLinkM(){document.getElementById('linkModal').classList.remove('open');linkingTId=null;}
+
+// ── EXPENSE ──
+function renderExp(){
+  const kTotal=totalKRW();const twdTotal=totalTWD();
+  const pLbls={'krw-cash':'韓元現金','twd-cash':'台幣現金','credit-card':'信用卡','wowpass':'WOWPASS'};
+  const byPay={};
+  expenses.forEach(e=>{const l=pLbls[e.payment]||e.payment;if(!byPay[l])byPay[l]=0;byPay[l]+=e.currency==='KRW'?Number(e.amount):Number(e.amount)/KRW_TO_TWD;});
+
+  let h=`<div class="exp-hero">
+    <div class="exp-tlbl">本次旅行總花費</div>
+    <div class="exp-tkrw">₩${kTotal.toLocaleString()}</div>
+    <div class="exp-ttwd">≈ NT$${Math.round(twdTotal).toLocaleString()}（每日自動更新匯率）</div>
+    <div class="exp-prow">${Object.entries(byPay).map(([k,v])=>`<div class="exp-pchip">${k} ₩${Math.round(v).toLocaleString()}</div>`).join('')}</div>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:14px;">
+    <button class="gb pri" onclick="openAddExpM()" style="flex:1;justify-content:center;">＋ 新增支出</button>
+    <button class="gb" onclick="openChart()" style="flex:1;justify-content:center;">📊 統計圖表</button>
+  </div>`;
+
+  const sorted=[...expenses].sort((a,b)=>b.date.localeCompare(a.date));
+  if(!sorted.length){h+=`<div class="empty"><div class="empty-i">🧾</div><div class="empty-t">還沒有支出記錄<br>點上方按鈕新增</div></div>`;}
+  else{
+    const pcls={'krw-cash':'pk','twd-cash':'pt','credit-card':'pc','wowpass':'pw'};
+    sorted.forEach(e=>{
+      const ta=e.currency==='KRW'?Math.round(Number(e.amount)*KRW_TO_TWD):Number(e.amount);
+      const lt=e.tripId?trips.find(t=>t.id===e.tripId):null;
+      h+=`<div class="eitem${lt?' ltrip':''}">
+        <div class="eicon">${e.category.split(' ')[0]}</div>
+        <div class="einfo">
+          <div class="ename">${e.name}</div>
+          <div class="emeta">${e.date} · ${e.category.split(' ').slice(1).join(' ')}</div>
+          ${e.note?`<div class="emeta">${e.note}</div>`:''}
+          ${lt?`<div class="etag">📅 ${lt.name}</div>`:''}
+          <span class="pchip ${pcls[e.payment]||'pc'}">${pLbls[e.payment]||e.payment}</span>
+        </div>
+        <div class="eright">
+          <div class="ekrw">${e.currency==='KRW'?'₩':'NT$'}${Number(e.amount).toLocaleString()}</div>
+          <div class="etwd">≈ NT$${ta.toLocaleString()}</div>
+          <div style="margin-top:5px;display:flex;gap:4px;justify-content:flex-end;">
+            <button class="gb sm" onclick="editExp('${e.id}')">✏️</button>
+            <button class="gb sm danger" onclick="delExp('${e.id}')">🗑</button>
+          </div>
+        </div>
+      </div>`;
+    });
+  }
+  document.getElementById('expC').innerHTML=h;
+}
+
+function delExp(id){expenses=expenses.filter(e=>e.id!==id);sv(K.expenses,expenses);renderExp();showToast('已刪除');}
+
+// ── CHART (類別甜甜圈 + 每日長條) ──
+let chartInsts=[];
+function openChart(){
+  const el=document.getElementById('chartC');
+  const kTotal=totalKRW();const twdTotal=Math.round(totalTWD());
+
+  if(!expenses.length){el.innerHTML=`<div class="empty"><div class="empty-i">📊</div><div class="empty-t">還沒有支出記錄</div></div>`;document.getElementById('chartModal').classList.add('open');return;}
+
+  // 類別統計
+  const catMap={};
+  expenses.forEach(e=>{
+    const c=e.category;
+    const krw=e.currency==='KRW'?Number(e.amount):Number(e.amount)/KRW_TO_TWD;
+    catMap[c]=(catMap[c]||0)+krw;
+  });
+  const catEntries=Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
+
+  // 每日統計
+  const dates=['2026-08-19','2026-08-20','2026-08-21','2026-08-22'];
+  const dayMap={};dates.forEach(d=>{dayMap[d]=0;});
+  expenses.forEach(e=>{if(dates.includes(e.date)){const krw=e.currency==='KRW'?Number(e.amount):Number(e.amount)/KRW_TO_TWD;dayMap[e.date]=(dayMap[e.date]||0)+krw;}});
+
+  const COLORS=['#2d8ec5','#5aabdc','#3caa7c','#f0a33c','#e05252','#9b59b6','#1a6fa3','#8bc4e8'];
+
+  el.innerHTML=`
+    <div style="background:rgba(45,142,197,0.08);border-radius:12px;padding:14px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+      <div><div class="t-label" style="margin-bottom:3px;">總花費（韓元）</div><div style="font-size:20px;font-weight:700;color:var(--dark);">₩${kTotal.toLocaleString()}</div></div>
+      <div style="text-align:right;"><div class="t-label" style="margin-bottom:3px;">換算台幣</div><div style="font-size:20px;font-weight:700;color:var(--ocean2);">NT$${twdTotal.toLocaleString()}</div></div>
+    </div>
+
+    <div class="t-card" style="margin-bottom:8px;">📊 消費類別分布</div>
+    <div class="chart-wrap"><canvas id="catChart"></canvas></div>
+    <div class="chart-legend" id="catLeg"></div>
+
+    <div class="t-card" style="margin-top:22px;margin-bottom:8px;">📅 每日花費（韓元）</div>
+    <div class="chart-wrap" style="height:170px;"><canvas id="dayChart"></canvas></div>
+
+    <div class="t-card" style="margin-top:22px;margin-bottom:10px;">💳 類別明細</div>
+    <div id="catDetail"></div>`;
+
+  document.getElementById('chartModal').classList.add('open');
+
+  // Destroy old charts
+  chartInsts.forEach(c=>{try{c.destroy();}catch(e){}});chartInsts=[];
+
+  setTimeout(()=>{
+    // Donut
+    const cc=document.getElementById('catChart');
+    if(cc){
+      chartInsts.push(new Chart(cc,{
+        type:'doughnut',
+        data:{labels:catEntries.map(([k])=>k),datasets:[{data:catEntries.map(([,v])=>Math.round(v)),backgroundColor:COLORS,borderWidth:2,borderColor:'rgba(255,255,255,0.85)'}]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
+          plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ₩${ctx.raw.toLocaleString()} (${kTotal?Math.round(ctx.raw/kTotal*100):0}%)`}}}}
+      }));
+      const leg=document.getElementById('catLeg');
+      if(leg)leg.innerHTML=catEntries.map(([k],i)=>`<div class="leg-item"><div class="leg-dot" style="background:${COLORS[i%COLORS.length]};"></div>${k}</div>`).join('');
+    }
+    // Bar
+    const dc=document.getElementById('dayChart');
+    if(dc){
+      chartInsts.push(new Chart(dc,{
+        type:'bar',
+        data:{labels:['Day1\n8/19','Day2\n8/20','Day3\n8/21','Day4\n8/22'],datasets:[{data:dates.map(d=>Math.round(dayMap[d]||0)),backgroundColor:'rgba(45,142,197,0.55)',borderColor:'rgba(45,142,197,0.85)',borderWidth:1.5,borderRadius:6}]},
+        options:{responsive:true,maintainAspectRatio:false,
+          plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ₩${ctx.raw.toLocaleString()}`}}},
+          scales:{y:{ticks:{font:{size:10},callback:v=>`₩${(v/1000).toFixed(0)}K`},grid:{color:'rgba(45,142,197,0.07)'}},x:{ticks:{font:{size:10}},grid:{display:false}}}}
+      }));
+    }
+    // Detail list
+    const det=document.getElementById('catDetail');
+    if(det){
+      det.innerHTML=catEntries.map(([cat,v],i)=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(255,255,255,0.55);border:1px solid rgba(45,142,197,0.12);border-radius:10px;margin-bottom:7px;">
+          <div style="width:10px;height:10px;border-radius:50%;background:${COLORS[i%COLORS.length]};flex-shrink:0;"></div>
+          <div style="flex:1;font-size:13px;font-weight:500;">${cat}</div>
+          <div style="text-align:right;">
+            <div style="font-size:13px;font-weight:700;color:var(--dark);">₩${Math.round(v).toLocaleString()}</div>
+            <div style="font-size:10px;color:var(--light);">NT$${Math.round(v*KRW_TO_TWD).toLocaleString()} · ${kTotal?Math.round(v/kTotal*100):0}%</div>
+          </div>
+        </div>`).join('');
+    }
+  },80);
+}
+function closeChart(){document.getElementById('chartModal').classList.remove('open');}
+
+// ── WEATHER ──
+function renderWx(){
+  const el=document.getElementById('wxC');
+  const now=new Date();
+  const days=['日','一','二','三','四','五','六'];
+  const dateStr=`${now.getMonth()+1}月${now.getDate()}日 週${days[now.getDay()]}`;
+
+  el.innerHTML=`
+  <div style="text-align:center;margin-bottom:18px;">
+    <div style="font-size:11px;color:var(--soft);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">BUSAN · 釜山</div>
+    <div style="font-size:13px;color:var(--light);">${dateStr}</div>
+  </div>
+
+  ${[
+    ['🌤','Naver 釜山即時天氣','今日氣溫 · 降雨機率 · 紫外線指數','https://weather.naver.com/today/2611010000','linear-gradient(135deg,rgba(91,158,201,0.22),rgba(58,127,168,0.12))','rgba(91,158,201,0.22)'],
+    ['🌍','Weather Channel 釜山','逐小時預報 · 韓文介面','https://weather.com/ko-KR/weather/today/l/35.10,129.03','rgba(255,255,255,0.82)','rgba(91,158,201,0.14)'],
+    ['🌬','Windy 風向動態圖','釜山風場 · 降雨雷達地圖','https://www.windy.com/?35.10,129.03,10','rgba(255,255,255,0.82)','rgba(91,158,201,0.14)'],
+  ].map(([ic,title,sub,url,bg,border])=>`
+  <button onclick="window.open('${url}','_blank')"
+    style="width:100%;margin-bottom:10px;padding:18px 16px;border-radius:16px;
+           border:1px solid ${border};background:${bg};cursor:pointer;
+           display:flex;align-items:center;gap:14px;text-align:left;
+           box-shadow:0 2px 12px rgba(58,127,168,0.06),inset 0 1px 0 rgba(255,255,255,0.85);">
+    <div style="font-size:36px;flex-shrink:0;">${ic}</div>
+    <div style="flex:1;">
+      <div style="font-size:14px;font-weight:600;color:var(--dark);margin-bottom:3px;">${title}</div>
+      <div style="font-size:11px;color:var(--light);">${sub}</div>
+    </div>
+    <div style="font-size:18px;color:var(--soft);flex-shrink:0;">›</div>
+  </button>`).join('')}
+
+  <div class="card" style="margin-top:6px;">
+    <div class="t-card" style="margin-bottom:14px;">🌊 釜山 8月旅遊提醒</div>
+    ${[
+      ['🌡','高溫悶熱','體感溫度易超38°C，外出多補水、避開正午'],
+      ['🌊','海灘旺季','海雲台・廣安里人潮多，建議9點前抵達'],
+      ['☔','午後陣雨','隨身攜帶折疊傘，雨勢通常短暫'],
+      ['🧴','防曬必備','海邊日曬強，SPF50+ 防曬乳早晚補擦'],
+      ['👟','好走的鞋','甘川文化村坡道多，穿舒適步行鞋'],
+      ['🚢','渡輪時間','前往影島・絶影島注意末班船時刻'],
+    ].map(([ic,t,d])=>`
+    <div class="itr">
+      <span class="itr-ic">${ic}</span>
+      <div class="itr-body">
+        <div class="itr-title">${t}</div>
+        <div class="itr-sub">${d}</div>
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ── FOOD ──
+function renderFood(){
+  document.getElementById('foodC').innerHTML=`
+  <div class="card" style="text-align:center;padding:22px 20px;">
+    <div style="font-size:48px;margin-bottom:12px;">🍜</div>
+    <div style="font-size:15px;font-weight:600;color:var(--dark);margin-bottom:6px;">搜尋釜山附近餐廳</div>
+    <div style="font-size:12px;color:var(--light);margin-bottom:18px;line-height:1.7;">點擊下方按鈕，自動開啟 Naver Map 搜尋</div>
+    <div style="display:flex;flex-direction:column;gap:10px;align-items:center;">
+      <button class="gb pri" onclick="window.open('https://map.naver.com/p/search/%ED%98%BC%EB%B0%A5','_blank')" style="width:220px;justify-content:center;padding:14px;">🗺 혼밥 一人食</button>
+      <button class="gb" onclick="window.open('https://map.naver.com/p/search/%EB%B6%80%EC%82%B0+%ED%95%B4%EB%AC%BC%ED%83%95','_blank')" style="width:220px;justify-content:center;">🦞 부산 해물탕 海鮮</button>
+      <button class="gb" onclick="window.open('https://map.naver.com/p/search/%EB%B0%80%EB%A9%B4','_blank')" style="width:220px;justify-content:center;">🍜 밀면 釜山冷麵</button>
+      <button class="gb" onclick="window.open('https://map.naver.com/p/search/%EC%B9%B4%ED%8E%98','_blank')" style="width:220px;justify-content:center;">☕ 카페 咖啡廳</button>
+      <button class="gb" onclick="window.open('https://map.naver.com/p/search/%EC%9E%90%EA%B0%88%EC%B9%98+%EC%8B%9C%EC%9E%A5','_blank')" style="width:220px;justify-content:center;">🐟 자갈치 자갈치市場</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="t-card" style="margin-bottom:12px;">釜山必吃推薦</div>
+    ${[['🍜','밀면','釜山冷麵','小麥麵條・夏天消暑首選'],['🦞','해물탕','海鮮湯鍋','釜山新鮮海產代表'],['🥟','씨앗호떡','種子糖餅','광안리 名物甜點'],['🍢','어묵','魚板串','釜山最有名路邊小吃'],['🐟','회','刺身生魚片','자갈치市場最新鮮'],['🍳','돼지국밥','豬肉湯飯','釜山在地早餐名物']].map(([ic,kr,zh,sub])=>`
+    <div class="itr">
+      <span class="itr-ic">${ic}</span>
+      <div class="itr-body">
+        <div class="itr-title"><span style="color:var(--ocean2);">${kr}</span> ${zh}</div>
+        <div class="itr-sub">${sub}</div>
+      </div>
+    </div>`).join('')}
+  </div>
+  <div class="card">
+    <div class="t-card" style="margin-bottom:10px;">韓文點餐用語</div>
+    ${[['這個一份','이거 하나 주세요'],['多少錢？','얼마예요?'],['外帶','포장이요'],['內用','여기서 먹을게요'],['好吃！','맛있어요!'],['辣的少一點','덜 맵게 해주세요'],['不辣的','안 매운 거 있어요?']].map(([zh,kr])=>`
+    <div class="kv-row">
+      <span class="kv-k">${zh}</span>
+      <span class="kv-v kr">${kr}</span>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ── CHECKLIST ──
+function renderCk(){
+  const done=checklist.filter(c=>c.done).length;
+  const pct=checklist.length?Math.round(done/checklist.length*100):0;
+  const cats={};
+  checklist.forEach(c=>{if(!cats[c.category])cats[c.category]=[];cats[c.category].push(c);});
+  let h=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+    <div style="font-size:13px;color:var(--mid);">完成進度</div>
+    <div style="font-size:13px;font-weight:700;color:var(--ocean2);">${done} / ${checklist.length} (${pct}%)</div>
+  </div>
+  <div class="pbar"><div class="pfill" style="width:${pct}%;"></div></div>`;
+  Object.entries(cats).forEach(([cat,items])=>{
+    h+=`<div class="sec-title">${cat}</div>`;
+    items.forEach(c=>{
+      h+=`<div class="ck-item${c.done?' done':''}" onclick="togCk('${c.id}')">
+        <div class="ck-box${c.done?' checked':''}"></div>
+        <div class="ck-text">${c.name}</div>
+        <button class="gb sm danger" onclick="event.stopPropagation();delCk('${c.id}')">🗑</button>
+      </div>`;
+    });
+  });
+  h+=`<div style="text-align:center;margin-top:16px;"><button class="gb pri" onclick="openCkM()">＋ 新增項目</button></div>`;
+  document.getElementById('ckC').innerHTML=h;
+}
+function togCk(id){const c=checklist.find(x=>x.id==id);if(c){c.done=!c.done;sv(K.checklist,checklist);renderCk();}}
+function delCk(id){checklist=checklist.filter(x=>x.id!=id);sv(K.checklist,checklist);renderCk();showToast('已刪除');}
+
+// ── SHOPPING ──
+const STORES_PRESET=['Olive Young','大創 DAISO','樂天超市','GS25 / CU','自由市場','자갈치市場','南浦洞地下街','免稅店','藥妝店','편의점（便利商店）','홈플러스（Home Plus）','이마트（E-Mart）'];
+const STORE_ICON={'Olive Young':'💚','大創 DAISO':'🔴','樂天超市':'🛒','GS25 / CU':'🏪','자갈치市場':'🐟','自由市場':'🧺','南浦洞地下街':'🌆','免稅店':'✈️','藥妝店':'💊','편의점（便利商店）':'🏪','홈플러스（Home Plus）':'🏬','이마트（E-Mart）':'🏬'};
+window._shopMode='store';
+
+function renderShop(){
+  const done=shopping.filter(s=>s.bought).length;
+  const total=shopping.length;
+  const mode=window._shopMode||'store';
+
+  let h=`
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+    <span class="t-body-b">已購 ${done} / ${total}</span>
+    <button class="gb sm" onclick="clearBought()">清除已買</button>
+  </div>
+  <div class="pbar" style="margin-bottom:14px;"><div class="pfill" style="width:${total?Math.round(done/total*100):0}%;"></div></div>
+  <div style="display:flex;gap:6px;margin-bottom:16px;">
+    <button onclick="setShopMode('store')" style="font-size:11px;padding:5px 14px;border-radius:20px;font-family:inherit;cursor:pointer;
+      border:1.5px solid ${mode==='store'?'rgba(91,158,201,0.55)':'rgba(91,158,201,0.18)'};
+      background:${mode==='store'?'rgba(91,158,201,0.14)':'rgba(255,255,255,0.6)'};
+      color:${mode==='store'?'var(--ocean2)':'var(--soft)'};font-weight:${mode==='store'?700:500};">
+      🏪 依地點
+    </button>
+    <button onclick="setShopMode('tag')" style="font-size:11px;padding:5px 14px;border-radius:20px;font-family:inherit;cursor:pointer;
+      border:1.5px solid ${mode==='tag'?'rgba(91,158,201,0.55)':'rgba(91,158,201,0.18)'};
+      background:${mode==='tag'?'rgba(91,158,201,0.14)':'rgba(255,255,255,0.6)'};
+      color:${mode==='tag'?'var(--ocean2)':'var(--soft)'};font-weight:${mode==='tag'?700:500};">
+      🏷 依類別
+    </button>
+  </div>`;
+
+  if(!total){
+    h+=`<div class="empty"><div class="empty-i">🛍</div><div class="empty-t">購物清單是空的<br>新增你想買的！</div></div>`;
+  } else if(mode==='store'){
+    // 依地點分組
+    const groups={};
+    shopping.forEach(s=>{
+      const key=(s.store&&s.store.trim())||'📦 未指定地點';
+      if(!groups[key])groups[key]=[];
+      groups[key].push(s);
+    });
+    const sortedKeys=[
+      ...STORES_PRESET.filter(p=>groups[p]),
+      ...Object.keys(groups).filter(k=>!STORES_PRESET.includes(k)&&k!=='📦 未指定地點').sort(),
+      ...(groups['📦 未指定地點']?['📦 未指定地點']:[]),
+    ];
+    sortedKeys.forEach(store=>{
+      const items=groups[store];
+      const storeD=items.filter(i=>i.bought).length;
+      const ic=STORE_ICON[store]||'🏬';
+      h+=`<div style="margin-bottom:18px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    background:rgba(91,158,201,0.08);border-radius:12px;
+                    padding:10px 14px;margin-bottom:8px;border:1px solid rgba(91,158,201,0.12);">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:18px;">${ic}</span>
+            <span class="t-body-b">${store}</span>
+          </div>
+          <span class="t-micro">${storeD}/${items.length} 件</span>
+        </div>`;
+      items.forEach(s=>{ h+=shopItemHTML(s,'store'); });
+      h+=`</div>`;
+    });
+  } else {
+    // 依標籤分組
+    const tags={};
+    shopping.forEach(s=>{if(!tags[s.tag])tags[s.tag]=[];tags[s.tag].push(s);});
+    Object.entries(tags).forEach(([tag,items])=>{
+      h+=`<div class="t-page sdiv">${tag}</div>`;
+      items.forEach(s=>{ h+=shopItemHTML(s,'tag'); });
+    });
+  }
+
+  h+=`<div style="text-align:center;margin-top:16px;"><button class="gb pri" onclick="openShopM()">＋ 新增商品</button></div>`;
+  document.getElementById('shopC').innerHTML=h;
+}
+
+function shopItemHTML(s, mode){
+  // 依地點模式：顯示標籤；依標籤模式：顯示地點
+  const badge = mode==='store' && s.tag
+    ? `<span style="font-size:9px;padding:1px 6px;background:rgba(58,127,168,0.08);border:1px solid rgba(91,158,201,0.18);border-radius:8px;color:var(--soft);flex-shrink:0;">${s.tag}</span>`
+    : (mode==='tag' && s.store && s.store.trim()
+      ? `<span style="font-size:9px;padding:1px 6px;background:rgba(91,158,201,0.1);border:1px solid rgba(91,158,201,0.2);border-radius:8px;color:var(--ocean2);flex-shrink:0;">${s.store}</span>`
+      : '');
+  return `<div class="ck-item${s.bought?' done':''}" onclick="togShop('${s.id}')">
+    <div class="ck-box${s.bought?' checked':''}"></div>
+    <div style="flex:1;min-width:0;">
+      <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+        <span class="ck-text" style="flex:none;">${s.name}</span>
+        ${badge}
+      </div>
+      ${s.note?`<div class="t-micro" style="margin-top:2px;">${s.note}</div>`:''}
+    </div>
+    <div style="display:flex;gap:4px;flex-shrink:0;">
+      <button class="gb sm" onclick="event.stopPropagation();editShop('${s.id}')">✏️</button>
+      <button class="gb sm danger" onclick="event.stopPropagation();delShop('${s.id}')">🗑</button>
+    </div>
+  </div>`;
+}
+
+function setShopMode(m){window._shopMode=m;renderShop();}
+function togShop(id){const s=shopping.find(x=>x.id==id);if(s){s.bought=!s.bought;sv(K.shopping,shopping);renderShop();}}
+function delShop(id){shopping=shopping.filter(x=>x.id!=id);sv(K.shopping,shopping);renderShop();}
+function clearBought(){shopping=shopping.filter(s=>!s.bought);sv(K.shopping,shopping);renderShop();showToast('已清除已買商品');}
+
+// ── TRIP MODAL ──
+let eTripId=null;
+function openAddTripM(){
+  eTripId=null;
+  ['tDate','tTime','tName','tAddr','tNote','tResv'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('tType').value='景點';
+  document.getElementById('tripMT').textContent='新增行程';
+  document.getElementById('tripModal').classList.add('open');
+}
+function closeTripM(){document.getElementById('tripModal').classList.remove('open');}
+function editTrip(id){
+  const t=trips.find(x=>x.id===id);if(!t)return;
+  eTripId=id;
+  document.getElementById('tDate').value=t.date||'';
+  document.getElementById('tTime').value=t.time||'';
+  document.getElementById('tType').value=t.type||'景點';
+  document.getElementById('tName').value=t.name||'';
+  document.getElementById('tAddr').value=t.address||'';
+  document.getElementById('tNote').value=t.note||'';
+  document.getElementById('tResv').value=t.reservation||'';
+  document.getElementById('tripMT').textContent='編輯行程';
+  document.getElementById('tripModal').classList.add('open');
+}
+function saveTrip(){
+  const name=document.getElementById('tName').value.trim();
+  if(!name){showToast('請輸入地點名稱');return;}
+  const data={id:eTripId||Date.now().toString(),date:document.getElementById('tDate').value,time:document.getElementById('tTime').value,type:document.getElementById('tType').value,name,address:document.getElementById('tAddr').value.trim(),note:document.getElementById('tNote').value.trim(),reservation:document.getElementById('tResv').value.trim()};
+  if(eTripId){const i=trips.findIndex(t=>t.id===eTripId);if(i!==-1)trips[i]=data;}else trips.push(data);
+  sv(K.trips,trips);closeTripM();renderPage(curPage);showToast(eTripId?'已更新行程':'已新增行程');eTripId=null;
+}
+
+// ── EXPENSE MODAL ──
+let eExpId=null;
+function openAddExpM(){
+  eExpId=null;
+  ['eName','eNote'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('eCat').value='🍽 餐飲';
+  document.getElementById('eAmt').value='';
+  document.getElementById('eCur').value='KRW';
+  document.getElementById('ePay').value='krw-cash';
+  document.getElementById('eDate').value=fmtD(new Date());
+  const sel=document.getElementById('eTripLink');
+  sel.innerHTML='<option value="">無</option>';
+  trips.sort((a,b)=>a.date.localeCompare(b.date)).forEach(t=>{sel.innerHTML+=`<option value="${t.id}">${t.date.slice(5)} ${t.name}</option>`;});
+  sel.value='';
+  document.getElementById('expMT').textContent='新增支出';
+  updateRNote();document.getElementById('expModal').classList.add('open');
+}
+function closeExpM(){document.getElementById('expModal').classList.remove('open');eExpId=null;}
+function editExp(id){
+  const e=expenses.find(x=>x.id===id);if(!e)return;
+  eExpId=id;
+  document.getElementById('eName').value=e.name;
+  document.getElementById('eCat').value=e.category;
+  document.getElementById('eAmt').value=e.amount;
+  document.getElementById('eCur').value=e.currency;
+  document.getElementById('ePay').value=e.payment;
+  document.getElementById('eDate').value=e.date;
+  document.getElementById('eNote').value=e.note||'';
+  const sel=document.getElementById('eTripLink');
+  sel.innerHTML='<option value="">無</option>';
+  trips.forEach(t=>{sel.innerHTML+=`<option value="${t.id}">${t.date.slice(5)} ${t.name}</option>`;});
+  sel.value=e.tripId||'';
+  document.getElementById('expMT').textContent='編輯支出';
+  updateRNote();document.getElementById('expModal').classList.add('open');
+}
+function updateRNote(){
+  const cur=document.getElementById('eCur').value,pay=document.getElementById('ePay').value;
+  const d=document.getElementById('rNote');
+  if(cur==='KRW'&&pay==='krw-cash'){d.style.display='block';d.textContent=`💱 韓元現金：1,000 KRW ≈ NT$${Math.round(KRW_TO_TWD*1000)}（每日自動更新，計入備註）`;}
+  else d.style.display='none';
+}
+document.addEventListener('change',e=>{if(e.target.id==='eCur'||e.target.id==='ePay')updateRNote();});
+function saveExp(){
+  const name=document.getElementById('eName').value.trim();
+  const amount=document.getElementById('eAmt').value;
+  if(!name||!amount){showToast('請填寫名稱與金額');return;}
+  const cur=document.getElementById('eCur').value,pay=document.getElementById('ePay').value;
+  let note=document.getElementById('eNote').value.trim();
+  if(cur==='KRW'&&pay==='krw-cash'){const twd=Math.round(Number(amount)*KRW_TO_TWD);note=(note?note+' · ':'')+`台銀估算約 NT$${twd.toLocaleString()}`;}
+  const data={id:eExpId||Date.now().toString(),name,currency:cur,payment:pay,note,amount:Number(amount),category:document.getElementById('eCat').value,date:document.getElementById('eDate').value,tripId:document.getElementById('eTripLink').value};
+  if(eExpId){const i=expenses.findIndex(e=>e.id===eExpId);if(i!==-1)expenses[i]=data;}else expenses.push(data);
+  sv(K.expenses,expenses);closeExpM();renderExp();showToast(eExpId?'已更新支出':'已新增支出');eExpId=null;
+}
+
+// ── CHECK / SHOP MODAL ──
+function openCkM(){document.getElementById('ckModal').classList.add('open');}
+function closeCkM(){document.getElementById('ckModal').classList.remove('open');}
+function saveCk(){
+  const name=document.getElementById('ckName').value.trim();if(!name){showToast('請輸入項目');return;}
+  checklist.push({id:Date.now(),category:document.getElementById('ckCat').value,name,done:false});
+  sv(K.checklist,checklist);closeCkM();renderCk();document.getElementById('ckName').value='';showToast('已新增');
+}
+function openShopM(){
+  eShopId=null;
+  document.getElementById('shopMT').textContent='新增購物清單';
+  ['shName','shStore','shNote'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('shTag').value='美妝';
+  clearChips();
+  document.getElementById('shopModal').classList.add('open');
+}
+function closeShopM(){document.getElementById('shopModal').classList.remove('open');eShopId=null;}
+
+let eShopId=null;
+function editShop(id){
+  const s=shopping.find(x=>x.id==id);if(!s)return;
+  eShopId=id;
+  document.getElementById('shopMT').textContent='編輯商品';
+  document.getElementById('shName').value=s.name||'';
+  document.getElementById('shTag').value=s.tag||'美妝';
+  document.getElementById('shStore').value=s.store||'';
+  document.getElementById('shNote').value=s.note||'';
+  clearChips();
+  if(s.store){
+    const chipId=STORE_CHIP_MAP[s.store];
+    if(chipId){const el=document.getElementById(chipId);if(el)el.classList.add('active');}
+  }
+  document.getElementById('shopModal').classList.add('open');
+}
+function saveShop(){
+  const name=document.getElementById('shName').value.trim();
+  if(!name){showToast('請輸入商品名稱');return;}
+  const store=document.getElementById('shStore').value.trim();
+  const data={
+    id:eShopId||Date.now(),
+    name,
+    tag:document.getElementById('shTag').value,
+    store,
+    note:document.getElementById('shNote').value.trim(),
+    bought: eShopId ? (shopping.find(x=>x.id==eShopId)||{}).bought||false : false,
+  };
+  if(eShopId){const i=shopping.findIndex(x=>x.id==eShopId);if(i!==-1)shopping[i]=data;}
+  else shopping.push(data);
+  sv(K.shopping,shopping);closeShopM();renderShop();
+  showToast(eShopId?'已更新商品':'已新增商品');eShopId=null;
+}
+
+const STORE_CHIP_MAP={
+  'Olive Young':'chip-OliveYoung','大創 DAISO':'chip-Daiso','樂天超市':'chip-Lotte',
+  'GS25 / CU':'chip-GS25','自由市場':'chip-Jayou','자갈치市場':'chip-Jagalchi',
+  '南浦洞地下街':'chip-Nampodong','免稅店':'chip-DutyFree','藥妝店':'chip-Pharmacy',
+};
+function selectStore(name){
+  document.getElementById('shStore').value=name;
+  document.querySelectorAll('.store-chip').forEach(c=>c.classList.remove('active'));
+  const chipId=STORE_CHIP_MAP[name];
+  if(chipId){const el=document.getElementById(chipId);if(el)el.classList.add('active');}
+}
+function clearChips(){
+  document.querySelectorAll('.store-chip').forEach(c=>c.classList.remove('active'));
+}
+
+// ── ADD DISPATCHER ──
+function openAddModal(){
+  if(curPage==='itinerary')openAddTripM();
+  else if(curPage==='expense')openAddExpM();
+  else if(curPage==='checklist')openCkM();
+  else if(curPage==='shopping')openShopM();
+  else openAddTripM();
+}
+
+// ── UTILS ──
+function copyText(text,label){
+  navigator.clipboard.writeText(text).then(()=>{
+    showToast(`✅ 已複製${label||''}：${text.length>20?text.slice(0,20)+'…':text}`);
+  }).catch(()=>{
+    // fallback for environments without clipboard API
+    const ta=document.createElement('textarea');
+    ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');showToast(`✅ 已複製${label||''}`);}catch(e){showToast('複製失敗，請長按手動複製');}
+    document.body.removeChild(ta);
+  });
+}
+function fmtD(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+document.querySelectorAll('.moverlay').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});});
+
+// ── 手動設定匯率（台銀即期賣出，每1000 KRW換多少TWD）──
+function updateManualRate(val){
+  const n = parseFloat(val);
+  if(!n || n<=0 || n>100){ showToast('請輸入合理匯率（例：22.5）'); return; }
+  KRW_TO_TWD = n / 1000;
+  const ts = new Date().toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+  RATE_UPDATED = ts;
+  RATE_SOURCE = '手動輸入';
+  localStorage.setItem(K.rate, KRW_TO_TWD.toString());
+  localStorage.setItem(K.rate+'_ts', ts);
+  localStorage.setItem(K.rate+'_src', '手動輸入');
+  // 更新 UI
+  const info = document.getElementById('rateUpdatedInfo');
+  if(info) info.textContent = '已儲存：' + ts + '（台銀即期賣出）';
+  calcConvert();
+  showToast(`✅ 匯率已更新：1,000 KRW ＝ NT$${n.toFixed(2)}`);
+}
+
+// ── EMERGENCY PAGE ──
+function renderEmg(){
+  document.getElementById('emgC').innerHTML=`
+
+  <!-- 頂部警示橫幅 -->
+  <div style="background:linear-gradient(135deg,rgba(210,60,60,0.12),rgba(210,60,60,0.06));
+              border:1px solid rgba(210,60,60,0.2);border-radius:16px;
+              padding:16px 18px;margin-bottom:14px;display:flex;align-items:center;gap:12px;">
+    <div style="font-size:28px;">🆘</div>
+    <div>
+      <div style="font-size:14px;font-weight:700;color:#b83030;margin-bottom:2px;">緊急求救</div>
+      <div style="font-size:11px;color:#c05050;line-height:1.5;">警察 112 · 救護車/消防 119 · 點下方直接撥打</div>
+    </div>
+  </div>
+
+  <!-- 一鍵撥打 -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+    ${[
+      ['🚔','112','警察','rgba(46,90,160,0.1)','rgba(46,90,160,0.22)','#2d5aa0'],
+      ['🚑','119','救護車 / 消防','rgba(200,50,50,0.1)','rgba(200,50,50,0.22)','#c03232'],
+    ].map(([ic,num,lbl,bg,border,col])=>`
+    <button onclick="window.open('tel:${num}')"
+      style="padding:16px 12px;border-radius:14px;border:1px solid ${border};
+             background:${bg};cursor:pointer;text-align:center;
+             box-shadow:0 2px 10px rgba(0,0,0,0.06),inset 0 1px 0 rgba(255,255,255,0.8);">
+      <div style="font-size:28px;margin-bottom:6px;">${ic}</div>
+      <div style="font-size:20px;font-weight:700;color:${col};letter-spacing:1px;">${num}</div>
+      <div style="font-size:10px;color:${col};opacity:.75;margin-top:2px;">${lbl}</div>
+    </button>`).join('')}
+  </div>
+
+  <!-- 重要聯絡 -->
+  <div class="t-page sdiv">🇹🇼 台灣緊急聯絡</div>
+
+  ${[
+    {ic:'📞',title:'旅外國人急難救助專線',sub:'24小時，免費撥打',val:'001-800-0885-0885',action:()=>`window.open('tel:0018000885088')`},
+    {ic:'🏛',title:'駐韓國台北代表部釜山辦事處',sub:'051-463-7965 · pus@mofa.gov.tw',addr:'釜山廣域市中區中央大路70號東遠大樓9F',kr:'부산광역시 중구 중앙대로 70 동원산업빌딩 9층'},
+  ].map(item=>`
+  <div style="background:rgba(255,255,255,0.82);border:1px solid rgba(91,158,201,0.14);
+              border-radius:14px;padding:14px 16px;margin-bottom:8px;
+              box-shadow:0 2px 10px rgba(58,127,168,0.05),inset 0 1px 0 rgba(255,255,255,0.9);">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:${item.addr?'10':'0'}px;">
+      <span style="font-size:22px;">${item.ic}</span>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;color:var(--dark);">${item.title}</div>
+        <div style="font-size:11px;color:var(--light);margin-top:2px;">${item.sub}</div>
+      </div>
+    </div>
+    ${item.addr?`
+    <div style="background:rgba(91,158,201,0.06);border-radius:10px;padding:10px 12px;margin-bottom:10px;">
+      <div style="font-size:11px;color:var(--dark);line-height:1.6;">${item.addr}</div>
+      <div style="font-size:11px;color:var(--light);margin-top:3px;">${item.kr}</div>
+    </div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap;">
+      <button class="gb sm" onclick="window.open('tel:0514637965')">📞 撥打電話</button>
+      <button class="gb sm" onclick="window.open('mailto:pus@mofa.gov.tw')">✉️ 發送郵件</button>
+      <button class="gb sm" onclick="window.open('https://map.naver.com/p/search/부산광역시 중구 중앙대로 70 동원산업빌딩 9층','_blank')">🗺 導航</button>
+      <button class="gb sm" onclick="copyText('부산광역시 중구 중앙대로 70 동원산업빌딩 9층','辦事處地址')">複製地址</button>
+    </div>`:``}
+    ${item.val?`
+    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:4px;">
+      <button class="gb sm" onclick="window.open('tel:0018000885088')">📞 撥打</button>
+      <button class="gb sm" onclick="copyText('001-800-0885-0885','急難救助專線')">複製號碼</button>
+    </div>`:``}
+  </div>`).join('')}
+
+  <!-- 附近醫院導航 -->
+  <div class="t-page sdiv">🏥 醫療協助</div>
+
+  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;">
+    ${[
+      ['🏥','導航到附近最近的醫院','병원','大型綜合醫院 / 急診'],
+      ['🏥','夜間急診醫院','응급실','24小時急診室'],
+      ['💊','附近藥局','약국','韓國藥局，外傷/感冒藥'],
+    ].map(([ic,lbl,kw,sub])=>`
+    <button onclick="window.open('https://map.naver.com/p/search/${encodeURIComponent(kw)}','_blank')"
+      style="width:100%;padding:14px 16px;border-radius:14px;
+             border:1px solid rgba(91,158,201,0.15);background:rgba(255,255,255,0.82);
+             cursor:pointer;display:flex;align-items:center;gap:13px;text-align:left;
+             box-shadow:0 2px 10px rgba(58,127,168,0.05),inset 0 1px 0 rgba(255,255,255,0.9);">
+      <div style="font-size:26px;flex-shrink:0;">${ic}</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;color:var(--dark);">${lbl}</div>
+        <div style="font-size:11px;color:var(--light);margin-top:2px;">${sub}</div>
+      </div>
+      <div style="font-size:16px;color:var(--soft);">›</div>
+    </button>`).join('')}
+  </div>
+
+  <!-- 症狀卡片產生器 -->
+  <div class="t-page sdiv">🩺 症狀說明卡</div>
+  <div style="background:rgba(255,255,255,0.82);border:1px solid rgba(91,158,201,0.14);
+              border-radius:14px;padding:16px;margin-bottom:10px;
+              box-shadow:0 2px 10px rgba(58,127,168,0.05);">
+    <div class="t-sub" style="margin-bottom:10px;">選擇症狀，產出中韓對照說明卡，直接給醫護人員看</div>
+    <select id="symptomSel" class="fs" onchange="genSymptomCard()"
+      style="width:100%;padding:10px 13px;border-radius:10px;margin-bottom:12px;
+             background:rgba(255,255,255,0.8);border:1px solid rgba(91,158,201,0.2);
+             font-family:inherit;font-size:13px;color:var(--dark);">
+      <option value="">── 請選擇主要症狀 ──</option>
+      <option value="fever">🌡 發燒 / 高燒</option>
+      <option value="stomachache">🤢 腹痛 / 腸胃不適</option>
+      <option value="vomit">🤮 嘔吐 / 噁心</option>
+      <option value="diarrhea">💧 腹瀉</option>
+      <option value="headache">🤕 頭痛 / 頭暈</option>
+      <option value="allergy">🤧 過敏反應 / 皮膚起疹</option>
+      <option value="sprain">🦵 扭傷 / 跌倒受傷</option>
+      <option value="cut">🩹 割傷 / 出血</option>
+      <option value="heatstroke">☀️ 中暑 / 熱衰竭</option>
+      <option value="chestpain">💔 胸痛 / 呼吸困難</option>
+      <option value="toothache">🦷 牙痛</option>
+      <option value="eyepain">👁 眼睛不適 / 異物入眼</option>
+      <option value="insect">🦟 蟲咬 / 蜂螫</option>
+      <option value="lostmed">💊 需要常備藥（慢性病用藥）</option>
+    </select>
+    <div id="symptomCard" style="display:none;"></div>
+  </div>
+
+  <!-- 護照遺失 -->
+  <div class="t-page sdiv">📋 緊急狀況處理</div>
+
+  ${[
+    ['📕','護照遺失','1. 立即前往最近的警察局（경찰서）報案並取得報案證明\n2. 聯絡釜山辦事處（051-463-7965）申請緊急旅行文件\n3. 保留所有相關收據與文件'],
+    ['💳','信用卡遺失','立即致電發卡銀行掛失（建議出發前記下卡背客服號碼）\n中信：+886-2-2732-1234\n玉山：+886-2-2182-1313\n國泰：+886-2-2708-7168'],
+    ['📱','手機遺失','1. 向警察局報案（112）取得報案證明\n2. 可至韓國電信門市購買臨時門號\n3. 重要資料建議事先備份至雲端'],
+    ['🧳','行李遺失','機場或車站行李遺失：前往該站遺失物服務台\n遺失物中心（Korean）：1588-1112\n釜山站遺失物：051-440-2370'],
+  ].map(([ic,title,steps])=>`
+  <details style="background:rgba(255,255,255,0.82);border:1px solid rgba(91,158,201,0.14);
+                  border-radius:14px;margin-bottom:8px;overflow:hidden;
+                  box-shadow:0 2px 10px rgba(58,127,168,0.04);">
+    <summary style="padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;list-style:none;-webkit-appearance:none;">
+      <span style="font-size:22px;">${ic}</span>
+      <span style="font-size:13px;font-weight:600;color:var(--dark);flex:1;">${title}</span>
+      <span style="font-size:14px;color:var(--soft);">›</span>
+    </summary>
+    <div style="padding:0 16px 14px;border-top:1px solid rgba(91,158,201,0.08);">
+      ${steps.split('\n').map(s=>`<div class="kv-row t-body" style="padding:6px 0;">${s}</div>`).join('')}
+    </div>
+  </details>`).join('')}
+
+  <!-- 實用韓文 -->
+  <div class="t-page sdiv">🗣 緊急韓文用語</div>
+  <div style="background:rgba(255,255,255,0.82);border:1px solid rgba(91,158,201,0.14);border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(58,127,168,0.04);padding:0 16px;">
+    ${[
+      ['救命！','살려주세요！'],
+      ['幫我叫救護車','구급차 불러주세요'],
+      ['我不舒服','저 아파요'],
+      ['這裡很痛','여기가 아파요'],
+      ['我需要醫生','의사가 필요해요'],
+      ['請帶我去醫院','병원에 데려다 주세요'],
+      ['我對＿＿過敏','저는 ＿＿ 알레르기가 있어요'],
+      ['我有慢性病','만성 질환이 있어요'],
+      ['我迷路了','길을 잃었어요'],
+      ['有人搶劫','도둑이야！/ 강도야！'],
+    ].map(([zh,kr])=>`
+    <div class="kv-row" onclick="copyText('${kr}','韓文')" style="cursor:pointer;padding:9px 0;">
+      <span class="kv-k">${zh}</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="kv-v kr">${kr}</span>
+        <span class="t-micro" style="padding:2px 7px;background:rgba(91,158,201,0.1);border-radius:8px;flex-shrink:0;">複製</span>
+      </div>
+    </div>`).join('')}
+  </div>
+
+  <div style="height:10px;"></div>`;
+}
+
+// ── SYMPTOM CARD GENERATOR ──
+function genSymptomCard(){
+  const val=document.getElementById('symptomSel').value;
+  const card=document.getElementById('symptomCard');
+  if(!val){card.style.display='none';return;}
+
+  const SYMPTOMS={
+    fever:{zh:'發燒 / 高燒',kr:'열이 납니다 / 고열이 있습니다',detail:'체온이 높습니다. 해열제가 필요합니다.',tip:'請量體溫，需要退燒藥'},
+    stomachache:{zh:'腹痛 / 腸胃不適',kr:'배가 아픕니다 / 위장이 좋지 않습니다',detail:'복통이 심합니다.',tip:'腹部持續疼痛，可能需要檢查'},
+    vomit:{zh:'嘔吐 / 噁心',kr:'구토가 납니다 / 메스껍습니다',detail:'구역질이 나고 구토를 했습니다.',tip:'嘔吐後虛弱，需要補液'},
+    diarrhea:{zh:'腹瀉',kr:'설사를 합니다',detail:'설사가 계속됩니다. 탈수 증상이 있을 수 있습니다.',tip:'持續腹瀉，需防脫水'},
+    headache:{zh:'頭痛 / 頭暈',kr:'두통이 있습니다 / 어지럽습니다',detail:'머리가 심하게 아프고 어지럽습니다.',tip:'嚴重頭痛合併頭暈'},
+    allergy:{zh:'過敏反應 / 皮膚起疹',kr:'알레르기 반응이 있습니다 / 두드러기가 났습니다',detail:'피부에 발진이 생겼습니다. 가렵습니다.',tip:'皮膚紅疹合併搔癢'},
+    sprain:{zh:'扭傷 / 跌倒受傷',kr:'발목을 삐었습니다 / 넘어져서 다쳤습니다',detail:'다리를 다쳤습니다. X레이 검사가 필요할 수 있습니다.',tip:'疑似扭傷，需要X光確認'},
+    cut:{zh:'割傷 / 出血',kr:'베였습니다 / 피가 납니다',detail:'상처에서 피가 납니다. 소독과 봉합이 필요합니다.',tip:'傷口出血，需要消毒縫合'},
+    heatstroke:{zh:'中暑 / 熱衰竭',kr:'열사병 증상이 있습니다',detail:'어지럽고 구역질이 납니다. 더위로 인한 증상입니다.',tip:'高溫環境後出現症狀，需降溫'},
+    chestpain:{zh:'胸痛 / 呼吸困難',kr:'가슴이 아픕니다 / 숨쉬기 힘듭니다',detail:'흉통이 있고 호흡이 어렵습니다. 즉각적인 치료가 필요합니다.',tip:'⚠️ 緊急：胸痛合併呼吸困難'},
+    toothache:{zh:'牙痛',kr:'이가 아픕니다',detail:'치통이 심합니다. 치과 진료가 필요합니다.',tip:'需要牙科急診'},
+    eyepain:{zh:'眼睛不適 / 異物入眼',kr:'눈이 아픕니다 / 눈에 이물질이 들어갔습니다',detail:'눈에 이물질이 있거나 통증이 있습니다.',tip:'眼睛疼痛，需要眼科處理'},
+    insect:{zh:'蟲咬 / 蜂螫',kr:'벌레에 물렸습니다 / 벌에 쏘였습니다',detail:'벌레에 물려 부었습니다. 알레르기 반응을 확인해 주세요.',tip:'蟲咬腫脹，確認是否過敏反應'},
+    lostmed:{zh:'需要慢性病用藥',kr:'만성 질환 약이 필요합니다',detail:'저는 만성 질환이 있습니다. 약을 잃어버려서 처방이 필요합니다.',tip:'需要補充慢性病處方藥'},
+  };
+
+  const s=SYMPTOMS[val];
+  if(!s){card.style.display='none';return;}
+
+  const isUrgent=val==='chestpain';
+  card.style.display='block';
+  card.innerHTML=`
+  <div style="background:${isUrgent?'rgba(200,50,50,0.08)':'rgba(91,158,201,0.06)'};
+              border:1.5px solid ${isUrgent?'rgba(200,50,50,0.3)':'rgba(91,158,201,0.2)'};
+              border-radius:12px;padding:14px;">
+    <div style="font-size:10px;font-weight:700;color:var(--soft);letter-spacing:1px;margin-bottom:10px;">📋 請將此卡片出示給醫護人員</div>
+
+    <div style="background:rgba(255,255,255,0.8);border-radius:10px;padding:12px;margin-bottom:10px;">
+      <div style="font-size:11px;color:var(--light);margin-bottom:4px;">症狀（中文）</div>
+      <div style="font-size:16px;font-weight:700;color:var(--dark);">${s.zh}</div>
+      <div style="font-size:11px;color:var(--soft);margin-top:4px;">${s.tip}</div>
+    </div>
+
+    <div style="background:rgba(255,255,255,0.8);border-radius:10px;padding:12px;margin-bottom:10px;">
+      <div style="font-size:11px;color:var(--light);margin-bottom:4px;">증상 (한국어) — 給醫護人員看</div>
+      <div style="font-size:16px;font-weight:700;color:${isUrgent?'#c03232':'var(--ocean2)'};">${s.kr}</div>
+      <div style="font-size:12px;color:var(--mid);margin-top:6px;line-height:1.6;">${s.detail}</div>
+    </div>
+
+    <div style="background:rgba(255,255,255,0.8);border-radius:10px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:11px;color:var(--light);margin-bottom:6px;">基本資訊 — 기본 정보</div>
+      <div style="font-size:12px;color:var(--dark);line-height:1.8;">
+        저는 대만 사람입니다.<br>
+        <span style="color:var(--light);">（我是台灣人）</span><br>
+        한국어를 못합니다.<br>
+        <span style="color:var(--light);">（我不會說韓語）</span><br>
+        도와주세요.<br>
+        <span style="color:var(--light);">（請幫助我）</span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:7px;flex-wrap:wrap;">
+      <button class="gb sm" onclick="copyText('${s.kr}\\n${s.detail}\\n저는 대만 사람입니다. 한국어를 못합니다. 도와주세요.','症狀說明')">複製韓文給醫護</button>
+      <button class="gb sm" onclick="window.open('https://map.naver.com/p/search/응급실','_blank')">🏥 找急診室</button>
+    </div>
+  </div>`;
+}
+
+
+updateDate();
+// 先讀快取匯率源資訊
+RATE_SOURCE=localStorage.getItem(K.rate+'_src')||'預設值';
+RATE_UPDATED=localStorage.getItem(K.rate+'_ts')||'—';
+renderHome(); // 先用本機快取畫面，不等雲端，開啟速度快
+updateSyncBadge();
+syncFromCloud().then(() => {
+  listenToCloud(); // 同步完成後開始即時監聽，之後其他人改動會自動更新畫面
+});
+</script>
+</body>
+</html>
